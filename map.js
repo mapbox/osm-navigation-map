@@ -114,7 +114,7 @@ function init() {
     var mapillaryTrafficSource = {
       "type": "vector",
       "tiles": [
-          "https://crossorigin.me/http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
+          "http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
         ],
         "minzoon": 16,
         "maxzoom": 16
@@ -215,7 +215,7 @@ function init() {
             var bottom = bounds.getSouth();
             var left = bounds.getWest();
             var right = bounds.getEast();
-            var josmUrl = 'https://127.0.0.1:8112/load_and_zoom?left='+left+'&right='+right+'&top='+top+'&bottom='+bottom;
+            var josmUrl = 'http://127.0.0.1:8111/load_and_zoom?left='+left+'&right='+right+'&top='+top+'&bottom='+bottom;
             $.ajax(josmUrl, function() {});
         }
 
