@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>San Francisco navigation data coverage on OpenStreetMap</title>
+  <meta name="description" content="San Francisco Navigation Data Summary">
+  <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.js'></script>
+  <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.17.0/mapbox-gl.css' rel='stylesheet' />
+  <script src='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v1.0.0/mapbox-gl-geocoder.js'></script>
+  <link rel='stylesheet' href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v1.0.0/mapbox-gl-geocoder.css' type='text/css' />
+  <link href="https://www.mapbox.com/base/latest/base.css" rel="stylesheet">
+</head>
+
+<style type="text/css">
+.mapname{
+  position: absolute;
+  top: 0;
+  left: 0;
+  text-align: left;
+  z-index: 6;
+  margin: 20px;
+  width: 30%;
+}
+
+.mapname h3 {
+  font-size: 18px;
+  line-height: 20px;
+}
+
+#map {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+#sidebar{
+  background:rgba(40, 53, 61, 0.23);
+}
+
+.toggles {
+  width: 320px;
+}
+
+.info {
+  width: 320px;
+  color: white;
+}
+
+.fill-darkblue-opaque {
+  background-color: rgba(34, 59, 83, 0.4);
+}
+
+.button.stroke:hover {
+  background-color: #3887be !important;
+  color: rgb(255, 255, 255) !important;
+}
+
+.button.stroke {
+  box-shadow: 0px 0px 0px 2px #223b53 inset !important;
+  color: white;
+}
+
+.micro{
+  font-weight: bold;
+}
+
+</style>
+<body>
+<!--[if lt IE 8]>
+  <p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+<div class='mapname'>
+<div class="dark">
+  <h3 class='fancy'>San Francisco Navigation data coverage on OpenStreetMap</h3>
+</div>
+</div>
+  <div class='col12 clearfix'>
+    <div id='map' class=''></div>
+    <div style="position: absolute; bottom: 0">
+      <div class="pad1">
+        <img class="hidden" id="mapillary-image" width="300px" src="">
+      </div>
+      <div class='pill pad1 toggles'>
+        <a href='#' id='turn-restrictions' class='col12 button stroke'>Turn Restrictions <span class='micro' id='turn-restriction-count'></span></a>
+        <a href='#' id='oneways' class='col12 button stroke'>Oneways <span class='micro' id='oneway-count'></span></a>
+        <a href='#' id='turn-lanes' class='col12 button stroke'>Turn Lanes <span class='micro' id='turn-lanes-count'></span></a>
+        <a href='#' id='traffic-signals' class='col12 button stroke'>Traffic Signals <span class='micro' id='traffic-signals-count'></span></a>
+        <a href='#' id='maxspeed' class='col12 button stroke'>Speed Limits <span class='micro' id='maxspeed-count'></span></a>
+        <a href='#' id='mapillary' class='col12 button stroke'>Mapillary Street Photos</a>
+      </div>
+    </div>
+  </div>
+  <script src="map.js"></script>
+</body>
+</html>
