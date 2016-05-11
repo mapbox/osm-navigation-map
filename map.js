@@ -111,7 +111,7 @@ map.on('style.load', function(e) {
 
 function init() {
     // do all initialisation stuff here
-    var mapillaryTrafficSource = {
+    var mapillaryTrafficSigns = {
       "type": "vector",
       "tiles": [
           "http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
@@ -120,7 +120,7 @@ function init() {
         "maxzoom": 16
     };
 
-    var mapillaryLineSource = {
+    var mapillaryCoverage = {
         "type": "vector",
         "tiles": [
         "https://d2munx5tg0hw47.cloudfront.net/tiles/{z}/{x}/{y}.mapbox"
@@ -129,11 +129,27 @@ function init() {
         "maxzoom": 16
     };
 
-    map.addSource("mapillary", mapillaryTrafficSource);
-    map.addSource("mapillaryLineSource", mapillaryLineSource);
+    map.addSource("mapillary", mapillaryTrafficSigns);
+    map.addSource("mapillaryCoverage", mapillaryCoverage);
 
-    var mapillaryTrafficLayer = {
-        "id": "mapillaryTrafficLayer",
+    var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us"]
+
+    var mapillaryTraffic = {
+        "id": "mapillaryTraffic",
+        "type": "circle",
+        "source": "mapillary",
+        'source-layer': 'ors',
+        'layout': {
+            'visibility': 'none'
+        },
+        "paint": {
+            "circle-radius": 2,
+            "circle-color": "white"
+        }
+    };
+
+    var mapillaryTrafficRestrictions = {
+        "id": "mapillaryTrafficRestrictions",
         "type": "circle",
         "source": "mapillary",
         'source-layer': 'ors',
@@ -143,13 +159,14 @@ function init() {
         "paint": {
             "circle-radius": 4,
             "circle-color": "#05d107"
-        }
+        },
+        "filter": mapillaryRestrictionsFilter
     };
 
-    var mapillaryLineStyle = {
-        "id": "mapillaryLineStyle",
+    var mapillaryCoverageLine = {
+        "id": "mapillaryCoverageLine",
         "type": "line",
-        "source": "mapillaryLineSource",
+        "source": "mapillaryCoverage",
         "source-layer": "mapillary-sequences",
         "layout": {
             "visibility": "none"
@@ -161,8 +178,8 @@ function init() {
         }
     };
 
-    var mapillaryTrafficLayerOuter = {
-        "id": "mapillaryTrafficLayerOuter",
+    var mapillaryTrafficHighlight = {
+        "id": "mapillaryTrafficHighlight",
         "type": "circle",
         "source": "mapillary",
         'source-layer': 'ors',
@@ -177,14 +194,32 @@ function init() {
         "filter": ["==", "key", ""]
     };
 
-    var mapillaryLabel = {
-        "id": "mapillarylabel",
+    var mapillaryTrafficLabel = {
+        "id": "mapillaryTrafficLabel",
         "type": "symbol",
         "source": "mapillary",
         "source-layer": "ors",
         "layout": {
             "text-field": "{value}",
-            "text-size": 15,
+            "text-size": 8,
+            "text-offset": [0,2],
+            "visibility": "none"
+        },
+        "paint": {
+            "text-color": "white",
+            "text-halo-color": "black",
+            "text-halo-width": 1
+        }
+    };
+
+    var mapillaryTrafficRestrictionsLabel = {
+        "id": "mapillaryTrafficRestrictionsLabel",
+        "type": "symbol",
+        "source": "mapillary",
+        "source-layer": "ors",
+        "layout": {
+            "text-field": "{value}",
+            "text-size": 12,
             "text-offset": [0,2],
             "visibility": "none"
         },
@@ -192,20 +227,24 @@ function init() {
             "text-color": "#05d107",
             "text-halo-color": "black",
             "text-halo-width": 1
-        }
+        },
+        "filter": mapillaryRestrictionsFilter
     };
 
-    map.addLayer(mapillaryLineStyle);
-    map.addLayer(mapillaryTrafficLayerOuter);
-    map.addLayer(mapillaryTrafficLayer);
-    map.addLayer(mapillaryLabel);
+    map.addLayer(mapillaryCoverageLine);
+    map.addLayer(mapillaryTrafficHighlight);
+    map.addLayer(mapillaryTraffic);
+    map.addLayer(mapillaryTrafficLabel);
+    map.addLayer(mapillaryTrafficRestrictions);
+    map.addLayer(mapillaryTrafficRestrictionsLabel);
+
 
     map.on('click', function(e) {
-        var f = map.queryRenderedFeatures(e.point, {layers:['mapillaryTrafficLayer']});
+        var f = map.queryRenderedFeatures(e.point, {layers:['mapillaryTraffic']});
         if (f.length) {
             var imageKey = f[0].properties.image_key;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/'+imageKey+'/thumb-640.jpg';
-            map.setFilter('mapillaryTrafficLayerOuter', ['==', 'key', f[0].properties.key]);
+            map.setFilter('mapillaryTrafficHighlight', ['==', 'key', f[0].properties.key]);
             $('#mapillary-image').removeClass('hidden');
             $('#mapillary-image').attr('src', imageUrl);
 
@@ -264,7 +303,7 @@ function init() {
 
 
 function toggleMapillary() {
-    var mapillaryLayers = ['mapillaryLineStyle', 'mapillaryTrafficLayerOuter', 'mapillaryTrafficLayer', 'mapillarylabel'];
+    var mapillaryLayers = ['mapillaryCoverageLine', 'mapillaryTrafficHighlight', 'mapillaryTraffic', 'mapillaryTrafficRestrictions', 'mapillaryTrafficLabel', 'mapillaryTrafficRestrictionsLabel'];
     mapillaryLayers.forEach(function (id) {
         var currentState = map.getLayoutProperty(id, 'visibility');
         var nextState = currentState === 'none' ? 'visible' : 'none';
