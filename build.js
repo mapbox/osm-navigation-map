@@ -19,21 +19,20 @@ var map = new mapboxgl.Map({
 map.addControl(new mapboxgl.Navigation());
 
 // Layer for review markers
-var streetFoodSource = new mapboxgl.GeoJSONSource({
+var reviewedRestrictionsSource = new mapboxgl.GeoJSONSource({
     data: {}
 });
-var food, landmark;
-var streetFoodLayer = {
+var reviewedRestrictions = {
     'id': 'mydataset',
     'type': 'circle',
-    'source': 'streetFoodSource',
+    'source': 'reviewedRestrictionsSource',
     'interactive': true,
     'layout': {
         visibility: 'visible'
     },
     'paint': {
-        'circle-radius': 14,
-        'circle-color': '#e62749',
+        'circle-radius': 10,
+        'circle-color': 'green',
         'circle-blur': .9
     }
 };
@@ -162,8 +161,8 @@ function init() {
 
     map.addSource("mapillary", mapillaryTrafficSigns);
     map.addSource("mapillaryCoverage", mapillaryCoverage);
-    map.addSource('streetFoodSource', streetFoodSource);
-    map.addLayer(streetFoodLayer);
+    map.addSource('reviewedRestrictionsSource', reviewedRestrictionsSource);
+    map.addLayer(reviewedRestrictions);
     getFeatures();
 
     var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us"]
@@ -379,7 +378,7 @@ function init() {
             mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
                 console.log(response);
                 featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
-                streetFoodSource.setData(featuresGeoJSON);
+                reviewedRestrictionsSource.setData(featuresGeoJSON);
             });
         };
 
@@ -452,11 +451,11 @@ function getFeatures() {
                 feature.properties.id = feature.id;
             });
             featuresGeoJSON.features = featuresGeoJSON.features.concat(data.features);
-            streetFoodSource.setData(featuresGeoJSON);
+            reviewedRestrictionsSource.setData(featuresGeoJSON);
 
         }
 
-        streetFoodSource.setData(data);
+        reviewedRestrictionsSource.setData(data);
 
     });
 }
