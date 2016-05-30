@@ -23,7 +23,7 @@ var reviewedRestrictionsSource = new mapboxgl.GeoJSONSource({
     data: {}
 });
 var reviewedRestrictions = {
-    'id': 'mydataset',
+    'id': 'reviewedRestrictions',
     'type': 'circle',
     'source': 'reviewedRestrictionsSource',
     'interactive': true,
@@ -31,8 +31,8 @@ var reviewedRestrictions = {
         visibility: 'visible'
     },
     'paint': {
-        'circle-radius': 10,
-        'circle-color': 'green',
+        'circle-radius': 15,
+        'circle-color': '#5deb5e',
         'circle-blur': .9
     }
 };
@@ -254,9 +254,8 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "circle-radius": 15,
-            "circle-color": "#007501",
-            "circle-blur": 1
+            "circle-radius": 5,
+            "circle-color": "white"
         },
         "filter": ["==", "key", ""]
     };
