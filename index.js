@@ -363,14 +363,14 @@ function init() {
             .setLngLat(e.lngLat)
             .setHTML(popupHTML)
             .addTo(map);
-
-        newfeaturesGeoJSON.properties["name"] = restriction;
-        newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
-        // newfeaturesGeoJSON.properties["description"] = description;
-        newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
+        
 
         // Update dataset on save
         document.getElementById("restrictionReview").onclick = function() {
+            newfeaturesGeoJSON.properties["name"] = restriction;
+            newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
+        // newfeaturesGeoJSON.properties["description"] = description;
+            newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
             console.log(JSON.stringify(newfeaturesGeoJSON));
             popup.remove();
             mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
