@@ -313,7 +313,7 @@ function init() {
         ], {
             layers: ['mapillaryTraffic']
         });
-        
+
         if (mapillaryRestrictions.length) {
             var imageKey = mapillaryRestrictions[0].properties.image_key;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
@@ -357,42 +357,35 @@ function init() {
         };
 
         // Review restriction popup
-        if(mapillaryRestrictions.length)
-        {
-            
+        if (mapillaryRestrictions.length) {
+
             var restriction = mapillaryRestrictions[0].properties.value;
-            if(!featuresGeoJSON.features.length)
-            {
+            if (!featuresGeoJSON.features.length) {
                 console.log("This is an empty dataset");
                 provideOptions();
 
-            }
-            else
-            {  
-                
+            } else {
+
                 var reviewedFeatures = map.queryRenderedFeatures(e.point, {
                     layers: ['reviewedRestrictions']
-                 });
-                if(reviewedFeatures.length)
-                {   
-                    
+                });
+                if (reviewedFeatures.length) {
+
                     var popupHTML = "<h3>" + restriction + "</h3>" + "already reviewed as " + reviewedFeatures[0].properties["status"];
                     var popup = new mapboxgl.Popup()
                         .setLngLat(e.lngLat)
                         .setHTML(popupHTML)
                         .addTo(map);
-                } 
-                else{
+                } else {
 
                     provideOptions();
                 }
 
-                   
-                
+
+
             }
 
-            function provideOptions()   
-            {
+            function provideOptions() {
 
                 var formOptions = "<div class='radio-pill pill pad2y clearfix'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
                 var formNotes = "<fieldset><label>Notes</label><textarea name=''></textarea></fieldset>"
@@ -403,7 +396,7 @@ function init() {
                     .addTo(map);
 
 
-                    // Update dataset on save
+                // Update dataset on save
                 document.getElementById("restrictionReview").onclick = function() {
                     newfeaturesGeoJSON.properties["name"] = restriction;
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
@@ -415,15 +408,10 @@ function init() {
                         console.log(response);
                         featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
                         reviewedRestrictionsSource.setData(featuresGeoJSON);
-                    });    
-                }   
+                    });
+                }
             }
-            
-
-           
-
         }
-
     });
 
     map.on('load', function() {
@@ -475,28 +463,29 @@ var featuresGeoJSON = {
     'features': []
 };
 
-function getFeatures() {
+function getFeatures(startID) {
 
     var url = DATASETS_BASE + 'features';
     var params = {
         'access_token': mapboxAccessDatasetToken
     };
 
+    // Begin with the last feature of previous request
+    if (startID) {
+        params.start = startID;
+    }
+
     $.getJSON(url, params, function(data) {
 
         console.log(data);
 
-        if (data.features.length > 0) {
-            data.features.forEach(function(feature) {
-                feature.properties.id = feature.id;
-            });
+        if (data.features.length) {
             featuresGeoJSON.features = featuresGeoJSON.features.concat(data.features);
+            var lastFeatureID = data.features[data.features.length - 1].id;
+            getFeatures(lastFeatureID);
             reviewedRestrictionsSource.setData(featuresGeoJSON);
-
         }
-
-        reviewedRestrictionsSource.setData(data);
-
+        reviewedRestrictionsSource.setData(featuresGeoJSON);
     });
 }
 
