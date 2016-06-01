@@ -308,12 +308,14 @@ function init() {
 
 
     map.on('click', function(e) {
+
         var mapillaryRestrictions = map.queryRenderedFeatures([
             [e.point.x - 5, e.point.y - 5],
             [e.point.x + 5, e.point.y + 5]
         ], {
             layers: ['mapillaryTraffic']
         });
+
 
         if (mapillaryRestrictions.length) {
             var imageKey = mapillaryRestrictions[0].properties.image_key;
@@ -357,10 +359,11 @@ function init() {
 
         };
 
-        // Review restriction popup
+        // Create review popup if there is a mapillary restriction nearby
         if (mapillaryRestrictions.length) {
 
             var restriction = mapillaryRestrictions[0].properties.value;
+
             if (!featuresGeoJSON.features.length) {
                 console.log("This is an empty dataset");
                 provideOptions();
@@ -371,39 +374,43 @@ function init() {
                     layers: ['reviewedRestrictions']
                 });
                 if (reviewedFeatures.length) {
+                    provideOptions(reviewedFeatures[0]);
 
-                    var popupHTML = "<h3>" + restriction + "</h3>" + "already reviewed as " + reviewedFeatures[0].properties["status"];
-                    var popup = new mapboxgl.Popup()
-                        .setLngLat(e.lngLat)
-                        .setHTML(popupHTML)
-                        .addTo(map);
+                    // var popupHTML = "<h3>" + restriction + "</h3>" + "already reviewed as " + reviewedFeatures[0].properties["status"];
+                    // var popup = new mapboxgl.Popup()
+                    //     .setLngLat(e.lngLat)
+                    //     .setHTML(popupHTML)
+                    //     .addTo(map);
+
                 } else {
-
                     provideOptions();
                 }
-
-
-
             }
 
-            function provideOptions() {
-
+            function provideOptions(feature) {
                 var formOptions = "<div class='radio-pill pill pad2y clearfix'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
                 var formNotes = "<fieldset><label>Notes</label><textarea name=''></textarea></fieldset>"
-                var popupHTML = "<h3>" + restriction + "</h3>" + formOptions + "<input id='restrictionReview' class='button col4' value='Save'>";
+                var popupHTML = "<h3>" + restriction + "</h3>" + formOptions + "<input id='saveReview' class='button col4' value='Save'>";
                 var popup = new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(popupHTML)
                     .addTo(map);
 
-
-                // Update dataset on save
-                document.getElementById("restrictionReview").onclick = function() {
+                // Show existing status if available
+                if (feature) {
+                    $("input[name=review][value=" + feature.properties["status"] + "]").prop('checked', true);
+                    newfeaturesGeoJSON = feature;
+                    newfeaturesGeoJSON["id"] = feature.properties["id"];
+                    console.log(feature);
+                } else {
                     newfeaturesGeoJSON.properties["name"] = restriction;
+                    newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
+                }
+
+                // Update dataset on clicking save
+                document.getElementById("saveReview").onclick = function() {
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
                     // newfeaturesGeoJSON.properties["description"] = description;
-                    newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
-                    console.log(JSON.stringify(newfeaturesGeoJSON));
                     popup.remove();
                     mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
                         console.log(response);
@@ -481,6 +488,10 @@ function getFeatures(startID) {
         console.log(data);
 
         if (data.features.length) {
+            data.features.forEach(function(feature) {
+                // Add dataset feature id as a property
+                feature.properties.id = feature.id;
+            });
             featuresGeoJSON.features = featuresGeoJSON.features.concat(data.features);
             var lastFeatureID = data.features[data.features.length - 1].id;
             getFeatures(lastFeatureID);
