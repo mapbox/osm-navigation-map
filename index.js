@@ -365,7 +365,7 @@ function init() {
 
             if (!featuresGeoJSON.features.length) {
                 console.log("This is an empty dataset");
-                provideOptions();
+                reviewFeature();
 
             } else {
 
@@ -373,7 +373,7 @@ function init() {
                     layers: ['reviewedRestrictions']
                 });
                 if (reviewedFeatures.length) {
-                    provideOptions(reviewedFeatures[0]);
+                    reviewFeature(reviewedFeatures[0]);
 
                     // var popupHTML = "<h3>" + restriction + "</h3>" + "already reviewed as " + reviewedFeatures[0].properties["status"];
                     // var popup = new mapboxgl.Popup()
@@ -382,11 +382,11 @@ function init() {
                     //     .addTo(map);
 
                 } else {
-                    provideOptions();
+                    reviewFeature();
                 }
             }
 
-            function provideOptions(feature) {
+            function reviewFeature(feature) {
                 var formOptions = "<div class='radio-pill pill pad2y clearfix'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
                 var formNotes = "<fieldset><label>Notes</label><textarea name=''></textarea></fieldset>"
                 var popupHTML = "<h3>" + restriction + "</h3>" + formOptions + "<input id='saveReview' class='button col4' value='Save'>";
@@ -406,10 +406,9 @@ function init() {
                     newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
                 }
 
-                // Update dataset on clicking save
+                // Update dataset with feature status on clicking save
                 document.getElementById("saveReview").onclick = function() {
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
-                    // newfeaturesGeoJSON.properties["description"] = description;
                     popup.remove();
                     mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
                         console.log(response);
