@@ -16,6 +16,12 @@ var map = new mapboxgl.Map({
 
 
 map.addControl(new mapboxgl.Navigation());
+var geocoder = new mapboxgl.Geocoder({
+    container: 'geocoder-container' 
+});
+
+map.addControl(geocoder);
+
 
 
 // Layer for review markers
