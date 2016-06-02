@@ -4,6 +4,8 @@ var DATASETS_BASE = 'https://api.mapbox.com/datasets/v1/planemad/' + dataset + '
 var mapboxAccessDatasetToken = 'sk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiY2lvdHNnd2xmMDBjb3VvbThmaXlsbnd5dCJ9.7Ui7o2K3U6flUzDGvYNZJw';
 var mapbox = new MapboxClient(mapboxAccessDatasetToken);
 
+var reviewer;
+
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 var map = new mapboxgl.Map({
     container: 'map', // container id
@@ -371,7 +373,7 @@ function init() {
 
             if (!featuresGeoJSON.features.length) {
                 console.log("This is an empty dataset");
-                provideOptions();
+                reviewFeature();
 
             } else {
 
@@ -379,7 +381,7 @@ function init() {
                     layers: ['reviewedRestrictions']
                 });
                 if (reviewedFeatures.length) {
-                    provideOptions(reviewedFeatures[0]);
+                    reviewFeature(reviewedFeatures[0]);
 
                     // var popupHTML = "<h3>" + restriction + "</h3>" + "already reviewed as " + reviewedFeatures[0].properties["status"];
                     // var popup = new mapboxgl.Popup()
@@ -388,14 +390,14 @@ function init() {
                     //     .addTo(map);
 
                 } else {
-                    provideOptions();
+                    reviewFeature();
                 }
             }
 
-            function provideOptions(feature) {
-                var formOptions = "<div class='radio-pill pill pad2y clearfix'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
-                var formNotes = "<fieldset><label>Notes</label><textarea name=''></textarea></fieldset>"
-                var popupHTML = "<h3>" + restriction + "</h3>" + formOptions + "<input id='saveReview' class='button col4' value='Save'>";
+            function reviewFeature(feature) {
+                var formOptions = "<div class='radio-pill pill pad2y clearfix' style='width:350px'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
+                var formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><input type='text' name='reviewer' placeholder='OSM username'></input></fieldset>"
+                var popupHTML = "<h3>" + restriction + "</h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style='display:none'>Delete</a></form>";
                 var popup = new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(popupHTML)
@@ -404,6 +406,7 @@ function init() {
                 // Show existing status if available
                 if (feature) {
                     $("input[name=review][value=" + feature.properties["status"] + "]").prop('checked', true);
+                    $("#reviewer").html(feature.properties["reviewer"]);
                     newfeaturesGeoJSON = feature;
                     newfeaturesGeoJSON["id"] = feature.properties["id"];
                     console.log(feature);
@@ -412,17 +415,30 @@ function init() {
                     newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
                 }
 
-                // Update dataset on clicking save
+                // Set reviewer name if previously saved
+                if(reviewer){
+                  $("input[name=reviewer]").val(reviewer);
+                }
+
+                // Update dataset with feature status on clicking save
                 document.getElementById("saveReview").onclick = function() {
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
-                    // newfeaturesGeoJSON.properties["description"] = description;
+                    reviewer = $("input[name=reviewer]").val();
+                    newfeaturesGeoJSON.properties["reviewed_by"] = reviewer;
                     popup.remove();
                     mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
                         console.log(response);
                         featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
                         reviewedRestrictionsSource.setData(featuresGeoJSON);
                     });
-                }
+                };
+                // Delete feature on clicking delete
+                document.getElementById("deleteReview").onclick = function() {
+                    popup.remove();
+                    mapbox.deleteFeature(newfeaturesGeoJSON, dataset, function(err, response) {
+                        console.log(response);
+                    });
+                };
             }
         }
     });
