@@ -35,7 +35,7 @@ var reviewedRestrictions = {
     },
     'paint': {
         'circle-radius': 15,
-        'circle-color': '#5deb5e',
+        'circle-color': 'blue',
         'circle-blur': .9
     }
 };
