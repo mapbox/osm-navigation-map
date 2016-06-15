@@ -1,5 +1,6 @@
 # osm-navigation-map
 ![untitled2](https://cloud.githubusercontent.com/assets/126868/15677497/23779148-2768-11e6-8dc0-1923abcc760e.gif)
+
 A map to explore navigation data in OpenStreetMap. This is a useful too to explore Mapillary detected road signages and add them to OSM.
 
 ### Tilesets
