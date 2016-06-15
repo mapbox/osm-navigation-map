@@ -1,7 +1,9 @@
 # osm-navigation-map
-A map to explore navigation data in OpenStreetMap.
+![untitled2](https://cloud.githubusercontent.com/assets/126868/15677497/23779148-2768-11e6-8dc0-1923abcc760e.gif)
+A map to explore navigation data in OpenStreetMap. This is a useful too to explore Mapillary detected road signages and add them to OSM.
 
-**Tilesets**
+### Tilesets
+
 The map uses various custom Mapbox tilesets maintained by @planemad that has OSM navigation data extrated via overpass/[shaktimaan](https://github.com/geohacker/shaktiman). The tilesets are updated infrequently, please request an update if required.
 
 - OSM turn restrictions `type=restriction` - `planemad.osmturnrestrictions`
