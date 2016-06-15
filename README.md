@@ -12,3 +12,8 @@ The map uses various custom Mapbox tilesets maintained by @planemad that has OSM
 - OSM traffic signals `highway=traffic_signals` - `planemad.osmtrafficsignals`
 - OSM speed limits `maxspeed=*` - `planemad.osmmaxspeed`
 - OSM access restrictions `access=*` - `planemad.osmaccess`
+
+### Develop
+
+* git clone
+* `npm install && npm start`
