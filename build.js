@@ -84,23 +84,7 @@ var toggleFilters = {
     }
 }
 
-// Parse the toggleFilters to build the compound filter arrays
-function parseToggleFilters() {
-    for (var filterItem in toggleFilters) {
 
-        var parsedFilter = new Array();
-        parsedFilter.push(toggleFilters[filterItem]['filter-mode']);
-
-        for (var value in toggleFilters[filterItem]['filter-values']) {
-            var filter = new Array();
-            filter.push(toggleFilters[filterItem]['filter-compare'][0], toggleFilters[filterItem]['filter-compare'][1], toggleFilters[filterItem]['filter-values'][value]);
-            parsedFilter.push(filter);
-        }
-
-        toggleFilters[filterItem]['filter'] = parsedFilter;
-    }
-}
-parseToggleFilters();
 
 // Map ready
 map.on('style.load', function(e) {
@@ -145,6 +129,7 @@ map.on('style.load', function(e) {
 
         // setInfo(toggleItem);
     });
+    $('#mapillary').click(); // Show Mapillary layer
 });
 
 function init() {
