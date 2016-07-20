@@ -39,12 +39,17 @@ var reviewedRestrictions = {
         visibility: 'visible'
     },
     'paint': {
-        'circle-radius': 15,
+        'circle-radius': {
+            "stops": [
+                [5, 1],
+                [15, 15]
+            ]
+        },
         'circle-color': {
             "property": "status",
             "type": "categorical",
             "stops": [
-                ['valid', 'green'],
+                ['valid', '#14c904'],
                 ['redundant', 'yellow'],
                 ['invalid', 'red']
             ]
@@ -202,9 +207,19 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "line-color": '#007501',
-            "line-width": 2,
-            "line-opacity": 0.5
+            "line-color": '#2e870a',
+            "line-width": {
+                "stops": [
+                    [8, 1],
+                    [15, 3]
+                ]
+            },
+            "line-opacity": {
+                "stops": [
+                    [8, 0.2],
+                    [17, 1]
+                ]
+            }
         }
     };
 
@@ -226,8 +241,8 @@ function init() {
                 "base": 1,
                 "stops": [
                     [
-                        13,
-                        0.3
+                        12,
+                        0
                     ],
                     [
                         17,
