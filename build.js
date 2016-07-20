@@ -109,11 +109,12 @@ map.on('style.load', function(e) {
         var toggleItem = e.target.id.split('#')[0];
 
         // Highlight clicked item
-        if ($(this).hasClass('active')) {
-            $(this).removeClass('active');
-        } else {
-            $(this).addClass('active');
-        }
+        $(this).toggleClass('active')
+        // if ($(this).hasClass('active')) {
+        //     $(this).removeClass('active');
+        // } else {
+        //     $(this).addClass('active');
+        // }
 
         // Mapillary overlay toggle
         if (toggleItem === 'mapillary') {
@@ -521,6 +522,7 @@ function toggle(id) {
     var currentState = map.getLayoutProperty(id, 'visibility');
     var nextState = currentState === 'none' ? 'visible' : 'none';
     map.setLayoutProperty(id, 'visibility', nextState);
+    console.log(id, map.getLayoutProperty(id, 'visibility'));
 }
 
 // Show only a specific group of layers
