@@ -15,5 +15,7 @@
 5. Once done, mark the status of the restriction on the navigation map:
  - `valid` - The detected restriction is valid and has been added to OSM
  - `redundant` - The detected restriction is correct but is not required to be added to OSM since it is redundant for routing. eg. A no left turn against a oneway road.
- - `invalid` The detected restriction is incorrect or is a false positive. Do not add to OSM.
+ - `invalid` The detected restriction on Mapillary is incorrect. Do not add to the map.
+ 
+For detailed instructions and special cases, please see this guide on [mapping turn restrictions from Mapillary](https://github.com/mapbox/mapping/wiki/Mapping-guide-for-adding-turn-restrictions-using-Mapillary)
 
