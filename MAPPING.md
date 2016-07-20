@@ -1,5 +1,15 @@
 # Mapping navigation features
 
+**Map legend**
+- Mapped turn restrictions on OpenStreetMap (red lines and points)
+ - From way (thick light red line)
+ - Via point (red circle)
+ - To way (thin red line)
+- Reviewed Mappilary restrictions (blue, yellow and red markers)
+ - Valid restriction detected and mapped (green)
+ - Redundant restriction not needed to map (yellow)
+ - Invalid restriction detected incorrectly not needed to map (red)
+
 ## Turn Restrictions
 
 ![](https://farm3.staticflickr.com/2900/14360050862_ef35f7ffa8_b.jpg)
