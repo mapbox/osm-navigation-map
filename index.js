@@ -19,7 +19,7 @@ var map = new mapboxgl.Map({
 
 map.addControl(new mapboxgl.Navigation());
 var geocoder = new mapboxgl.Geocoder({
-    container: 'geocoder-container' 
+    container: 'geocoder-container'
 });
 
 map.addControl(geocoder);
@@ -158,7 +158,7 @@ function init() {
     map.addLayer(reviewedRestrictions);
     getFeatures();
 
-    var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us"]
+    var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn"]
 
     var mapillaryTraffic = {
         "id": "mapillaryTraffic",
