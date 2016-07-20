@@ -11,8 +11,8 @@ mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kzt
 var map = new mapboxgl.Map({
     container: 'map', // container id
     style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq', //stylesheet location
-    center: [-122.4310, 37.7638], // starting position
-    zoom: 11, // starting zoom
+    center: [-105.2, 44.6], // starting position
+    zoom: 3.5, // starting zoom
     hash: true,
     attributionControl: false
 });
