@@ -41,7 +41,15 @@ var reviewedRestrictions = {
     },
     'paint': {
         'circle-radius': 15,
-        'circle-color': 'blue',
+        'circle-color': {
+            "property": "status",
+            "type": "categorical",
+            "stops": [
+                ['valid', 'green'],
+                ['redundant', 'yellow'],
+                ['invalid', 'red']
+            ]
+        },
         'circle-blur': .9
     }
 };
@@ -383,7 +391,7 @@ function init() {
             function reviewFeature(feature) {
                 var formOptions = "<div class='radio-pill pill pad2y clearfix' style='width:350px'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
                 var formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><input type='text' name='reviewer' placeholder='OSM username'></input></fieldset>"
-                var popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/"+ e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style=''>Delete</a></form>";
+                var popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style=''>Delete</a></form>";
                 var popup = new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(popupHTML)
@@ -402,8 +410,8 @@ function init() {
                 }
 
                 // Set reviewer name if previously saved
-                if(reviewer){
-                  $("input[name=reviewer]").val(reviewer);
+                if (reviewer) {
+                    $("input[name=reviewer]").val(reviewer);
                 }
 
                 // Update dataset with feature status on clicking save
