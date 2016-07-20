@@ -13,7 +13,7 @@
 4. Edit the location on [OpenStreetMap](http://www.osm.org) and add the turn restriction. Using the [iD web editor](https://www.mapbox.com/blog/simple-editing-for-turn-restrictions-in-openstreetmap/) or [JOSM advanced editor](https://www.mapbox.com/blog/turn-restrictions/)
 
 5. Once done, mark the status of the restriction on the navigation map:
-- `valid` - The detected restriction is valid and has been added to OSM
-- `redundant` - The detected restriction is correct but is not required to be added to OSM since it is redundant for routing. eg. A no left turn against a oneway road.
-- `invalid` The detected restriction is incorrect or is a false positive. Do not add to OSM.
+ - `valid` - The detected restriction is valid and has been added to OSM
+ - `redundant` - The detected restriction is correct but is not required to be added to OSM since it is redundant for routing. eg. A no left turn against a oneway road.
+ - `invalid` The detected restriction is incorrect or is a false positive. Do not add to OSM.
 
