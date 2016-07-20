@@ -50,7 +50,7 @@ var reviewedRestrictions = {
             "property": "status",
             "type": "categorical",
             "stops": [
-                ['valid', '#14c904'],
+                ['valid', '#02b3eb'],
                 ['redundant', 'yellow'],
                 ['invalid', 'red']
             ]
@@ -180,7 +180,13 @@ function init() {
         },
         "paint": {
             "circle-radius": 2,
-            "circle-color": "white"
+            "circle-color": "white",
+            "circle-opacity": {
+                "stops": [
+                    [14, 0.5],
+                    [16, 1]
+                ]
+            }
         }
     };
 
@@ -194,7 +200,7 @@ function init() {
         },
         "paint": {
             "circle-radius": 4,
-            "circle-color": "#05d107"
+            "circle-color": "#14c904"
         },
         "filter": mapillaryRestrictionsFilter
     };
@@ -242,12 +248,12 @@ function init() {
                 "base": 1,
                 "stops": [
                     [
-                        12,
-                        0
+                        15,
+                        0.3
                     ],
                     [
                         17,
-                        0.6
+                        1
                     ]
                 ]
             },
@@ -287,7 +293,13 @@ function init() {
         "paint": {
             "text-color": "white",
             "text-halo-color": "black",
-            "text-halo-width": 1
+            "text-halo-width": 1,
+            "text-opacity": {
+                "stops": [
+                    [14, 0],
+                    [18, 1]
+                ]
+            }
         }
     };
 
@@ -303,7 +315,7 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "text-color": "#05d107",
+            "text-color": "#15ff00",
             "text-halo-color": "black",
             "text-halo-width": 1
         },
@@ -313,9 +325,10 @@ function init() {
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
     map.addLayer(mapillaryTrafficHighlight);
-    map.addLayer(mapillaryTraffic, 'noturn');
+
     map.addLayer(mapillaryTrafficLabel);
     map.addLayer(mapillaryTrafficRestrictions, 'noturn');
+    map.addLayer(mapillaryTraffic, 'noturn');
     map.addLayer(mapillaryTrafficRestrictionsLabel);
 
 
