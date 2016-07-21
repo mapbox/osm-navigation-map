@@ -610,6 +610,12 @@ function openInJOSM() {
     $.ajax(josmUrl, function() {});
 }
 
+// Open fullsize Mapillary image in new tab onclicking thumbnail
+$('#mapillary-image').click(function(){
+  var url = $('#mapillary-image').attr('src').replace('640','2048');
+  window.open(url, '_blank');
+});
+
 },{"mapbox/lib/services/datasets":12}],2:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
 //

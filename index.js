@@ -608,3 +608,9 @@ function openInJOSM() {
     var josmUrl = 'http://127.0.0.1:8111/load_and_zoom?left=' + left + '&right=' + right + '&top=' + top + '&bottom=' + bottom;
     $.ajax(josmUrl, function() {});
 }
+
+// Open fullsize Mapillary image in new tab onclicking thumbnail
+$('#mapillary-image').click(function(){
+  var url = $('#mapillary-image').attr('src').replace('640','2048');
+  window.open(url, '_blank');
+});
