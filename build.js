@@ -199,8 +199,8 @@ function init() {
             'visibility': 'none'
         },
         "paint": {
-            "circle-radius": 4,
-            "circle-color": "#14c904"
+            "circle-radius": 5,
+            "circle-color": "hsl(112, 100%, 50%)"
         },
         "filter": mapillaryRestrictionsFilter
     };
@@ -310,12 +310,13 @@ function init() {
         "source-layer": "ors",
         "layout": {
             "text-field": "{value}",
-            "text-size": 12,
+            "text-size": 14,
             "text-offset": [0, 2],
+            "text-font": ["Clan Offc Pro Bold"],
             "visibility": "none"
         },
         "paint": {
-            "text-color": "#15ff00",
+            "text-color": "hsl(112, 100%, 50%)",
             "text-halo-color": "black",
             "text-halo-width": 1
         },
