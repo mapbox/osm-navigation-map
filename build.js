@@ -538,6 +538,7 @@ function getFeatures(startID) {
             reviewedRestrictionsSource.setData(featuresGeoJSON);
         }
         reviewedRestrictionsSource.setData(featuresGeoJSON);
+        countProperty(featuresGeoJSON, 'status');
     });
 }
 
@@ -612,10 +613,29 @@ function openInJOSM() {
 }
 
 // Open fullsize Mapillary image in new tab onclicking thumbnail
-$('#mapillary-image').click(function(){
-  var url = $('#mapillary-image').attr('src').replace('640','2048');
-  window.open(url, '_blank');
+$('#mapillary-image').click(function() {
+    var url = $('#mapillary-image').attr('src').replace('640', '2048');
+    window.open(url, '_blank');
 });
+
+function countProperty(geojson, property) {
+    var stats = [];
+    for (var i in geojson.features) {
+        var val = geojson.features[i].properties[property];
+        if (val in stats) {
+            stats[val]++;
+        } else {
+            stats[val] = 0;
+        }
+    }
+    stats["total"] = geojson.features.length;
+
+    // Update counts in the page
+    for (var prop in stats){
+      $('[data-count-feature="' + prop + '"]').html(stats[prop]);
+    }
+    console.log(stats);
+}
 
 },{"mapbox/lib/services/datasets":12}],2:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0

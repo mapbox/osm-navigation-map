@@ -33,9 +33,8 @@
 
 #map {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 100%;
+  height: 100vh;
+  width: 100vw;
 }
 
 #geocoder-container {
@@ -82,7 +81,18 @@
   font-weight: bold;
 }
 
-
+/*Count of overlay features*/
+#feature-stats{
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+#feature-stats ul{
+  text-align: right;
+}
+#feature-stats [data-count-feature]{
+  font-weight: bold;
+}
 </style>
 <body>
 <!--[if lt IE 8]>
@@ -109,6 +119,14 @@
         <a href='#' id='maxspeed' class='col12 button stroke'>Speed Limits <span class='micro' id='maxspeed-count'></span></a> -->
         <a href='#' id='mapillary' class='col12 button stroke'>Mapillary Street Photos</a>
       </div>
+    </div>
+    <div id="feature-stats" class="dark">
+      <ul>
+        <li>Total Mapillary restrictions reviewed <span data-count-feature='total' class='short button'>5</span></li>
+        <li>Valid <span data-count-feature='valid'></span></li>
+        <li>Redundant <span data-count-feature='redundant'></span></li>
+        <li>Invalid <span data-count-feature='invalid'></span></li>
+      </ul>
     </div>
   </div>
   <script src="build.js"></script>
