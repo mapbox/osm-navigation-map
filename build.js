@@ -152,7 +152,7 @@ map.on('style.load', function(e) {
 
 function init() {
     // do all initialisation stuff here
-    var mapillaryClientId = "{MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3}";
+    var mapillaryClientId = "MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3";
     var mapillaryTrafficSigns = {
         "type": "vector",
         "tiles": [
