@@ -155,11 +155,10 @@ function init() {
     var mapillaryTrafficSigns = {
         "type": "vector",
         "tiles": [
-            // "http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
-            "https://a.mapillary.io/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
+            "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
         ],
         "minzoon": 14,
-        "maxzoom": 16
+        "maxzoom": 18
     };
 
     var mapillaryCoverage = {
@@ -205,7 +204,7 @@ function init() {
         "id": "mapillaryTrafficRestrictions",
         "type": "circle",
         "source": "mapillary",
-        'source-layer': 'ors',
+        'source-layer': 'objects',
         'layout': {
             'visibility': 'none'
         },
@@ -337,11 +336,11 @@ function init() {
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
 
-    // map.addLayer(mapillaryTrafficHighlight);
-    // map.addLayer(mapillaryTrafficLabel);
+    map.addLayer(mapillaryTrafficHighlight);
+    map.addLayer(mapillaryTrafficLabel);
     map.addLayer(mapillaryTrafficRestrictions, 'noturn');
-    // map.addLayer(mapillaryTraffic, 'noturn');
-    // map.addLayer(mapillaryTrafficRestrictionsLabel);
+    map.addLayer(mapillaryTraffic, 'noturn');
+    map.addLayer(mapillaryTrafficRestrictionsLabel);
 
 
     map.on('click', function(e) {
@@ -355,7 +354,7 @@ function init() {
 
 
         if (mapillaryRestrictions.length) {
-            var imageKey = mapillaryRestrictions[0].properties.image_key;
+            var imageKey = mapillaryRestrictions[0].properties.rects[0].image_key;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
             map.setFilter('mapillaryTrafficHighlight', ['==', 'key', mapillaryRestrictions[0].properties.key]);
             $('#mapillary-image').removeClass('hidden');
@@ -507,8 +506,8 @@ function init() {
 
 
 function toggleMapillary() {
-    // var mapillaryLayers = ['mapillaryCoverageLine', 'mapillaryCoverageLineDirection', 'mapillaryTrafficHighlight', 'mapillaryTraffic', 'mapillaryTrafficRestrictions', 'mapillaryTrafficLabel', 'mapillaryTrafficRestrictionsLabel'];
-    var mapillaryLayers = ['mapillaryCoverageLine',  'mapillaryTrafficRestrictions'];
+    var mapillaryLayers = ['mapillaryCoverageLine', 'mapillaryCoverageLineDirection', 'mapillaryTrafficHighlight', 'mapillaryTraffic', 'mapillaryTrafficRestrictions', 'mapillaryTrafficLabel', 'mapillaryTrafficRestrictionsLabel'];
+
     mapillaryLayers.forEach(function(id) {
         var currentState = map.getLayoutProperty(id, 'visibility');
         var nextState = currentState === 'none' ? 'visible' : 'none';
