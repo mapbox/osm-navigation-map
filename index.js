@@ -151,14 +151,14 @@ map.on('style.load', function(e) {
 
 function init() {
     // do all initialisation stuff here
+    var mapillaryClientId = "{***REMOVED***3}";
     var mapillaryTrafficSigns = {
         "type": "vector",
         "tiles": [
-            // "https://crossorigin.me/http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
-            "http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
+            "https://a.mapillary.io/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
         ],
         "minzoon": 14,
-        "maxzoom": 14
+        "maxzoom": 16
     };
 
     var mapillaryCoverage = {
@@ -359,6 +359,8 @@ function init() {
             map.setFilter('mapillaryTrafficHighlight', ['==', 'key', mapillaryRestrictions[0].properties.key]);
             $('#mapillary-image').removeClass('hidden');
             $('#mapillary-image').attr('src', imageUrl);
+            // Log properties
+            console.log(mapillaryRestrictions[0].properties);
 
             openInJOSM();
 
