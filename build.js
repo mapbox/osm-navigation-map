@@ -166,7 +166,9 @@ function init() {
     map.addSource("mapillaryCoverage", mapillaryCoverage);
     map.addSource('reviewedRestrictionsSource', reviewedRestrictionsSource);
     map.addLayer(reviewedRestrictions);
-    getFeatures();
+
+    // Fetch data every 10 minutes
+    refreshData(10);
 
     var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn"]
 
@@ -506,41 +508,52 @@ function toggleMapillary() {
 }
 
 // Get data from a Mapbox dataset
-var featuresGeoJSON = {
-    'type': 'FeatureCollection',
-    'features': []
-};
 
-function getFeatures(startID) {
 
-    var url = DATASETS_BASE + 'features';
-    var params = {
-        'access_token': mapboxAccessDatasetToken
+function refreshData(refreshRate) {
+    var featuresGeoJSON = {
+        'type': 'FeatureCollection',
+        'features': []
     };
 
-    // Begin with the last feature of previous request
-    if (startID) {
-        params.start = startID;
+    getFeatures();
+
+    // setInterval(function(){ getFeatures(); }, 3000);
+
+    function getFeatures(startID) {
+
+        var url = DATASETS_BASE + 'features';
+        var params = {
+            'access_token': mapboxAccessDatasetToken
+        };
+
+        // Begin with the last feature of previous request
+        if (startID) {
+            params.start = startID;
+        }
+
+        $.getJSON(url, params, function(data) {
+
+            console.log(data);
+
+            if (data.features.length) {
+                data.features.forEach(function(feature) {
+                    // Add dataset feature id as a property
+                    feature.properties.id = feature.id;
+                });
+                featuresGeoJSON.features = featuresGeoJSON.features.concat(data.features);
+                var lastFeatureID = data.features[data.features.length - 1].id;
+                getFeatures(lastFeatureID);
+                reviewedRestrictionsSource.setData(featuresGeoJSON);
+            }
+            reviewedRestrictionsSource.setData(featuresGeoJSON);
+            countProperty(featuresGeoJSON, 'status');
+        });
     }
 
-    $.getJSON(url, params, function(data) {
-
-        console.log(data);
-
-        if (data.features.length) {
-            data.features.forEach(function(feature) {
-                // Add dataset feature id as a property
-                feature.properties.id = feature.id;
-            });
-            featuresGeoJSON.features = featuresGeoJSON.features.concat(data.features);
-            var lastFeatureID = data.features[data.features.length - 1].id;
-            getFeatures(lastFeatureID);
-            reviewedRestrictionsSource.setData(featuresGeoJSON);
-        }
-        reviewedRestrictionsSource.setData(featuresGeoJSON);
-        countProperty(featuresGeoJSON, 'status');
-    });
 }
+
+
 
 // Toggle visibility of a layer
 function toggle(id) {
@@ -631,8 +644,8 @@ function countProperty(geojson, property) {
     stats["total"] = geojson.features.length;
 
     // Update counts in the page
-    for (var prop in stats){
-      $('[data-count-feature="' + prop + '"]').html(stats[prop]);
+    for (var prop in stats) {
+        $('[data-count-feature="' + prop + '"]').html(stats[prop]);
     }
     console.log(stats);
 }
