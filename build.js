@@ -518,9 +518,13 @@ function toggleMapillary() {
 
 // Get data from a Mapbox dataset
 
+var featuresGeoJSON = {
+    'type': 'FeatureCollection',
+    'features': []
+};
 
 function refreshData(refreshRate) {
-    var featuresGeoJSON = {
+    featuresGeoJSON = {
         'type': 'FeatureCollection',
         'features': []
     };
