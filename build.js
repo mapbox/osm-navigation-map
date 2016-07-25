@@ -156,7 +156,8 @@ function init() {
     var mapillaryTrafficSigns = {
         "type": "vector",
         "tiles": [
-            "https://a.mapillary.io/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
+            "http://mapillary-vector.mapillary.io/tiles/{z}/{x}/{y}.mapbox?ors=key,l,package,value,validated,image_key,user,score,obj,rect",
+            // "https://a.mapillary.io/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
         ],
         "minzoon": 14,
         "maxzoom": 16
