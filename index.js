@@ -258,11 +258,11 @@ function init() {
                 "base": 1,
                 "stops": [
                     [
-                        15,
-                        0.3
+                        14,
+                        0
                     ],
                     [
-                        17,
+                        16,
                         1
                     ]
                 ]
@@ -437,7 +437,7 @@ function init() {
                 // Show existing status if available
                 if (feature) {
                     $("input[name=review][value=" + feature.properties["status"] + "]").prop('checked', true);
-                    $("#reviewer").html(feature.properties["reviewer"]);
+                    $("#reviewer").html(feature.properties["reviewed_by"]);
                     newfeaturesGeoJSON = feature;
                     newfeaturesGeoJSON["id"] = feature.properties["id"];
                     console.log(feature);
