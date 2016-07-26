@@ -7,15 +7,6 @@ var mapbox = new MapboxClient(mapboxAccessDatasetToken);
 
 var reviewer;
 
-var mapillary = {},
-    apibase = 'https://a.mapillary.com/v2/',
-    viewercss = 'https://npmcdn.com/mapillary-js@1.3.0/dist/mapillary-js.min.css',
-    viewerjs = 'https://npmcdn.com/mapillary-js@1.3.0/dist/mapillary-js.min.js',
-    clientId = '***REMOVED***3',
-    maxResults = 1000,
-    maxPages = 10,
-    tileZoom = 14;
-
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 var map = new mapboxgl.Map({
     container: 'map', // container id
