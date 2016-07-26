@@ -355,7 +355,7 @@ function init() {
 
 
         if (mapillaryRestrictions.length) {
-            var imageKey = mapillaryRestrictions[0].properties.rects[0].image_key;
+            var imageKey = JSON.parse(mapillaryRestrictions[0].properties.rects)[0].image_key;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
             map.setFilter('mapillaryTrafficHighlight', ['==', 'key', mapillaryRestrictions[0].properties.key]);
             $('#mapillary-image').removeClass('hidden');
