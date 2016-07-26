@@ -19,7 +19,8 @@ var mapillary = {},
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 var map = new mapboxgl.Map({
     container: 'map', // container id
-    style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq', //stylesheet location
+    style: 'mapbox://styles/planemad/cir385mpq003xcjmdrwf8lj33',
+    // style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq',
     center: [-105.2, 44.6], // starting position
     zoom: 3.5, // starting zoom
     hash: true,
@@ -107,10 +108,16 @@ var toggleFilters = {
 }
 
 
+// Add Mapillary sprites
+// var style = map.getStyle();
+// style.sprite = 'https://www.mapillary.com/sprites/';
+// map.setStyle(style);
+
 
 // Map ready
 map.on('style.load', function(e) {
     init();
+
 
     showOnlyLayers(toggleLayers, 'turn-restrictions');
 
@@ -284,7 +291,8 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "circle-radius": 5,
+            "circle-radius": 10,
+            "circle-opacity": 0.3,
             "circle-color": "white"
         },
         "filter": ["==", "key", ""]
@@ -324,6 +332,7 @@ function init() {
             "text-size": 14,
             "text-offset": [0, 2],
             "text-font": ["Clan Offc Pro Bold"],
+            "icon-image": "{value}",
             "visibility": "none"
         },
         "paint": {
@@ -357,7 +366,7 @@ function init() {
         if (mapillaryRestrictions.length) {
             var imageKey = JSON.parse(mapillaryRestrictions[0].properties.rects)[0].image_key;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
-            map.setFilter('mapillaryTrafficHighlight', ['==', 'key', mapillaryRestrictions[0].properties.key]);
+            map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', mapillaryRestrictions[0].properties.rects]);
             $('#mapillary-image').removeClass('hidden');
             $('#mapillary-image').attr('src', imageUrl);
             // Log properties
