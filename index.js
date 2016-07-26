@@ -158,7 +158,7 @@ function init() {
             "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
         ],
         "minzoon": 14,
-        "maxzoom": 18
+        "maxzoom": 16
     };
 
     var mapillaryCoverage = {
