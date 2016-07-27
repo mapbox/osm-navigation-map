@@ -9,8 +9,8 @@ var reviewer;
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 var map = new mapboxgl.Map({
     container: 'map', // container id
-    style: 'mapbox://styles/planemad/cir385mpq003xcjmdrwf8lj33',
-    // style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq',
+    // style: 'mapbox://styles/planemad/cir385mpq003xcjmdrwf8lj33',
+    style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq',
     center: [-105.2, 44.6], // starting position
     zoom: 3.5, // starting zoom
     hash: true,
