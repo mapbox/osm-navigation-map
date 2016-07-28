@@ -1,10 +1,13 @@
 var MapboxClient = require('mapbox/lib/services/datasets');
+var GeoCoder = require('mapbox/lib/services/geocoder');
 var dataset = 'ciotrgzko002ew8m29jh4lvhf';
 var DATASETS_BASE = 'https://api.mapbox.com/datasets/v1/planemad/' + dataset + '/';
 var mapboxAccessDatasetToken = 'sk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiY2lvdHNnd2xmMDBjb3VvbThmaXlsbnd5dCJ9.7Ui7o2K3U6flUzDGvYNZJw';
 var mapbox = new MapboxClient(mapboxAccessDatasetToken);
+var GeoCoderClient = new GeoCoder(mapboxAccessDatasetToken);
 
 var reviewer;
+var mapillaryId;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 var map = new mapboxgl.Map({
@@ -355,6 +358,7 @@ function init() {
 
         if (mapillaryRestrictions.length) {
             var imageKey = JSON.parse(mapillaryRestrictions[0].properties.rects)[0].image_key;
+            mapillaryId = imageKey;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
             map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', mapillaryRestrictions[0].properties.rects]);
             $('#mapillary-image').removeClass('hidden');
@@ -440,10 +444,20 @@ function init() {
                     $("#reviewer").html(feature.properties["reviewed_by"]);
                     newfeaturesGeoJSON = feature;
                     newfeaturesGeoJSON["id"] = feature.properties["id"];
+                    GeoCoderClient.geocodeReverse(
+                      { latitude: newfeaturesGeoJSON.geometry["coordinates"][1], longitude: newfeaturesGeoJSON.geometry["coordinates"][0] },
+                      function(err, res) {
+                        newfeaturesGeoJSON.properties["country"] = res.features[0].place_name.split(",").pop();;
+                    });
                     console.log(feature);
                 } else {
                     newfeaturesGeoJSON.properties["name"] = restriction;
                     newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
+                    GeoCoderClient.geocodeReverse(
+                      { latitude: newfeaturesGeoJSON.geometry["coordinates"][1], longitude: newfeaturesGeoJSON.geometry["coordinates"][0] },
+                      function(err, res) {
+                        newfeaturesGeoJSON.properties["country"] = res.features[0].place_name.split(",").pop();;
+                    });
                 }
 
                 // Set reviewer name if previously saved
@@ -456,6 +470,8 @@ function init() {
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
                     reviewer = $("input[name=reviewer]").val();
                     newfeaturesGeoJSON.properties["reviewed_by"] = reviewer;
+                    newfeaturesGeoJSON.properties["reviewed_on"] =  Date.now();
+                    newfeaturesGeoJSON.properties["mapillary_id"] = mapillaryId;
                     popup.remove();
                     mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
                         console.log(response);
