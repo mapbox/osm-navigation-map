@@ -1,10 +1,13 @@
 var MapboxClient = require('mapbox/lib/services/datasets');
 var GeoCoder = require('mapbox/lib/services/geocoder');
+var osmAuth = require('osm-auth');
 var dataset = 'cir7dfh3b000oijmgxkaoy0tx';
 var DATASETS_BASE = 'https://api.mapbox.com/datasets/v1/theplanemad/' + dataset + '/';
 var mapboxAccessDatasetToken = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
 var mapbox = new MapboxClient(mapboxAccessDatasetToken);
 var GeoCoderClient = new GeoCoder(mapboxAccessDatasetToken);
+var auth = require('./auth');
+auth.update();
 
 var reviewer;
 var mapillaryId;
@@ -345,6 +348,10 @@ function init() {
     map.addLayer(mapillaryTraffic, 'noturn');
     map.addLayer(mapillaryTrafficRestrictionsLabel);
 
+    document.getElementById('logout').onclick = function () {
+        auth.logout();
+        auth.update();
+    };
 
     map.on('click', function(e) {
 
@@ -431,8 +438,16 @@ function init() {
 
             function reviewFeature(feature) {
                 var formOptions = "<div class='radio-pill pill pad2y clearfix' style='width:350px'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
-                var formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><input type='text' name='reviewer' placeholder='OSM username'></input></fieldset>"
-                var popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style=''>Delete</a></form>";
+                var formReviewer;
+                var popupHTML;
+                if (auth.authenticated()) {
+                 formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><input type='text' name='reviewer'></input></fieldset>";
+                 popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style=''>Delete</a></form>";
+                }
+                else {
+                 formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label></fieldset>";
+                 popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='authenticate' class='button col4' href='#'>Login</a></form>";
+                }
                 var popup = new mapboxgl.Popup()
                     .setLngLat(e.lngLat)
                     .setHTML(popupHTML)
@@ -460,11 +475,9 @@ function init() {
                     });
                 }
 
-                // Set reviewer name if previously saved
-                if (reviewer) {
-                    $("input[name=reviewer]").val(reviewer);
-                }
-
+                if(auth.authenticated()) {
+                 var userName = document.getElementById('user').innerHTML;
+                 $("input[name=reviewer]").val(userName);
                 // Update dataset with feature status on clicking save
                 document.getElementById("saveReview").onclick = function() {
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
@@ -486,6 +499,21 @@ function init() {
                         console.log(response);
                     });
                 };
+
+                document.getElementById('logout').onclick = function () {
+                    auth.logout();
+                    auth.update();
+                    popup.remove();
+                 };
+            }
+                else {
+                    document.getElementById("authenticate").onclick = function () {
+                        auth.authenticate(function () {
+                        auth.update();
+                    });
+                };
+
+                }
             }
         }
     });
