@@ -1,11 +1,9 @@
 var MapboxClient = require('mapbox/lib/services/datasets');
-var GeoCoder = require('mapbox/lib/services/geocoder');
 var osmAuth = require('osm-auth');
 var dataset = 'cir7dfh3b000oijmgxkaoy0tx';
 var DATASETS_BASE = 'https://api.mapbox.com/datasets/v1/theplanemad/' + dataset + '/';
 var mapboxAccessDatasetToken = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
 var mapbox = new MapboxClient(mapboxAccessDatasetToken);
-var GeoCoderClient = new GeoCoder(mapboxAccessDatasetToken);
 var auth = require('./auth');
 auth.update();
 
@@ -459,20 +457,10 @@ function init() {
                     $("#reviewer").html(feature.properties["reviewed_by"]);
                     newfeaturesGeoJSON = feature;
                     newfeaturesGeoJSON["id"] = feature.properties["id"];
-                    GeoCoderClient.geocodeReverse(
-                      { latitude: newfeaturesGeoJSON.geometry["coordinates"][1], longitude: newfeaturesGeoJSON.geometry["coordinates"][0] },
-                      function(err, res) {
-                        newfeaturesGeoJSON.properties["country"] = res.features[0].place_name.split(",").pop();;
-                    });
                     console.log(feature);
                 } else {
                     newfeaturesGeoJSON.properties["name"] = restriction;
                     newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
-                    GeoCoderClient.geocodeReverse(
-                      { latitude: newfeaturesGeoJSON.geometry["coordinates"][1], longitude: newfeaturesGeoJSON.geometry["coordinates"][0] },
-                      function(err, res) {
-                        newfeaturesGeoJSON.properties["country"] = res.features[0].place_name.split(",").pop();;
-                    });
                 }
 
                 if(auth.authenticated()) {
