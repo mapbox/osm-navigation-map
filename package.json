@@ -20,7 +20,7 @@
   "author": "Mapbox",
   "license": "ISC",
   "dependencies": {
-    "mapbox": "^0.12.0"
+    "mapbox": "^1.0.0-beta3"
   },
   "devDependencies": {
     "browserify": "^13.1.0",
