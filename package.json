@@ -4,9 +4,9 @@
   "description": "A map style to explore and improve navigation data on OpenStreetMap",
   "main": "index.js",
   "scripts": {
-    "start": "npm run build & jekyll serve",
-    "build": "watchify index.js -o build.js -v",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm run watch & serve .",
+    "watch": "watchify index.js -o build.js -v",
+    "build": "browserify index.js -o build.js -v"
   },
   "repository": {
     "type": "git",
@@ -20,7 +20,11 @@
   "author": "Mapbox",
   "license": "ISC",
   "dependencies": {
-    "mapbox": "^0.12.0",
+    "mapbox": "^0.12.0"
+  },
+  "devDependencies": {
+    "browserify": "^13.1.0",
+    "serve": "^1.4.0",
     "watchify": "^3.7.0"
   }
 }
