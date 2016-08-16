@@ -1,0 +1,8 @@
+# Ignore these by default
+
+# node
+node_modules/
+*.log
+
+# misc
+.DS_Store
