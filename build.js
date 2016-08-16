@@ -1,32 +1,26 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var DATASETS_ID = 'cir7dfh3b000oijmgxkaoy0tx';
+var DATASETS_BASE_URL = 'https://api.mapbox.com/datasets/v1/theplanemad/' + DATASETS_ID + '/';
+var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
+
 var MapboxClient = require('mapbox/lib/services/datasets');
-var dataset = 'cir7dfh3b000oijmgxkaoy0tx';
-var DATASETS_BASE = 'https://api.mapbox.com/datasets/v1/theplanemad/' + dataset + '/';
-var mapboxAccessDatasetToken = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
-var mapbox = new MapboxClient(mapboxAccessDatasetToken);
+var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
 
 var reviewer;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
+
 var map = new mapboxgl.Map({
-    container: 'map', // container id
-    // style: 'mapbox://styles/planemad/cir385mpq003xcjmdrwf8lj33',
+    container: 'map',
     style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq',
-    center: [-105.2, 44.6], // starting position
-    zoom: 3.5, // starting zoom
+    center: [-105.2, 44.6],
+    zoom: 3.5,
     hash: true,
     attributionControl: false
 });
 
-
-map.addControl(new mapboxgl.Navigation());
-var geocoder = new mapboxgl.Geocoder({
-    container: 'geocoder-container'
-});
-
-map.addControl(geocoder);
-
-
+map.addControl(new mapboxgl.Navigation({ position: 'top-right' }));
+map.addControl(new mapboxgl.Geocoder({ container: 'geocoder-container' }));
 
 // Layer for review markers
 var reviewedRestrictionsSource = new mapboxgl.GeoJSONSource({
@@ -48,9 +42,9 @@ var reviewedRestrictions = {
             ]
         },
         'circle-color': {
-            "property": "status",
-            "type": "categorical",
-            "stops": [
+            'property': 'status',
+            'type': 'categorical',
+            'stops': [
                 ['valid', '#02b3eb'],
                 ['redundant', 'yellow'],
                 ['invalid', 'red']
@@ -98,17 +92,14 @@ var toggleFilters = {
     }
 }
 
-
 // Add Mapillary sprites
 // var style = map.getStyle();
 // style.sprite = 'https://www.mapillary.com/sprites/';
 // map.setStyle(style);
 
-
 // Map ready
 map.on('style.load', function(e) {
     init();
-
 
     showOnlyLayers(toggleLayers, 'turn-restrictions');
 
@@ -458,7 +449,7 @@ function init() {
                     reviewer = $("input[name=reviewer]").val();
                     newfeaturesGeoJSON.properties["reviewed_by"] = reviewer;
                     popup.remove();
-                    mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
+                    mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
                         console.log(response);
                         featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
                         reviewedRestrictionsSource.setData(featuresGeoJSON);
@@ -467,7 +458,7 @@ function init() {
                 // Delete feature on clicking delete
                 document.getElementById("deleteReview").onclick = function() {
                     popup.remove();
-                    mapbox.deleteFeature(newfeaturesGeoJSON["id"], dataset, function(err, response) {
+                    mapbox.deleteFeature(newfeaturesGeoJSON["id"], DATASETS_ID, function(err, response) {
                         console.log(response);
                     });
                 };
@@ -538,9 +529,9 @@ function refreshData(refreshRate) {
 
     function getFeatures(startID) {
 
-        var url = DATASETS_BASE + 'features';
+        var url = DATASETS_BASE_URL + 'features';
         var params = {
-            'access_token': mapboxAccessDatasetToken
+            'access_token': DATASETS_ACCESS_TOKEN
         };
 
         // Begin with the last feature of previous request
@@ -563,7 +554,12 @@ function refreshData(refreshRate) {
                 reviewedRestrictionsSource.setData(featuresGeoJSON);
             }
             reviewedRestrictionsSource.setData(featuresGeoJSON);
-            countProperty(featuresGeoJSON, 'status');
+
+            var stats = countProperty(featuresGeoJSON, 'status');
+            // Update counts in the page
+            for (var prop in stats) {
+                $('[data-count-feature="' + prop + '"]').html(stats[prop]);
+            } 
         });
     }
 
@@ -648,25 +644,177 @@ $('#mapillary-image').click(function() {
 });
 
 function countProperty(geojson, property) {
-    var stats = [];
-    for (var i in geojson.features) {
-        var val = geojson.features[i].properties[property];
-        if (val in stats) {
-            stats[val]++;
-        } else {
-            stats[val] = 0;
+    var stats = {};
+    geojson.features.forEach(function(feature) {
+        var val = feature.properties[property];
+        stats[val] = stats[val] + 1 || 1;
+    });
+    stats['total'] = geojson.features.length;
+    return stats;
+}
+},{"mapbox/lib/services/datasets":8}],2:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+    try {
+        cachedSetTimeout = setTimeout;
+    } catch (e) {
+        cachedSetTimeout = function () {
+            throw new Error('setTimeout is not defined');
         }
     }
-    stats["total"] = geojson.features.length;
-
-    // Update counts in the page
-    for (var prop in stats) {
-        $('[data-count-feature="' + prop + '"]').html(stats[prop]);
+    try {
+        cachedClearTimeout = clearTimeout;
+    } catch (e) {
+        cachedClearTimeout = function () {
+            throw new Error('clearTimeout is not defined');
+        }
     }
-    console.log(stats);
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
 }
 
-},{"mapbox/lib/services/datasets":7}],2:[function(require,module,exports){
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],3:[function(require,module,exports){
 'use strict';
 
 var interceptor = require('rest/interceptor');
@@ -698,7 +846,7 @@ var callbackify = interceptor({
 
 module.exports = callbackify;
 
-},{"rest/interceptor":13}],3:[function(require,module,exports){
+},{"rest/interceptor":14}],4:[function(require,module,exports){
 'use strict';
 
 var rest = require('rest');
@@ -718,7 +866,7 @@ module.exports = function(config) {
     .wrap(callbackify);
 };
 
-},{"./callbackify":2,"rest":9,"rest/interceptor/defaultRequest":14,"rest/interceptor/errorCode":15,"rest/interceptor/mime":16,"rest/interceptor/params":17,"rest/interceptor/pathPrefix":18,"rest/interceptor/template":19}],4:[function(require,module,exports){
+},{"./callbackify":3,"rest":10,"rest/interceptor/defaultRequest":15,"rest/interceptor/errorCode":16,"rest/interceptor/mime":17,"rest/interceptor/params":18,"rest/interceptor/pathPrefix":19,"rest/interceptor/template":20}],5:[function(require,module,exports){
 // We keep all of the constants that declare endpoints in one
 // place, so that we could concievably update this for API layout
 // revisions.
@@ -761,7 +909,7 @@ module.exports.API_STYLES_SPRITE_DELETE_ICON = '/styles/v1/{owner}/{styleid}/spr
 
 module.exports.API_STYLES_FONT_GLYPH_RANGES = '/fonts/v1/{owner}/{font}/{start}-{end}.pbf'
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 var b64 = require('rest/util/base64');
@@ -795,7 +943,7 @@ function getUser(token) {
 
 module.exports = getUser;
 
-},{"rest/util/base64":28}],6:[function(require,module,exports){
+},{"rest/util/base64":29}],7:[function(require,module,exports){
 'use strict';
 
 var invariant = require('../vendor/invariant');
@@ -853,7 +1001,7 @@ function makeService(name) {
 
 module.exports = makeService;
 
-},{"../vendor/invariant":37,"./client":3,"./constants":4,"./get_user":5}],7:[function(require,module,exports){
+},{"../vendor/invariant":38,"./client":4,"./constants":5,"./get_user":6}],8:[function(require,module,exports){
 'use strict';
 
 var invariant = require('../../vendor/invariant'),
@@ -1399,7 +1547,7 @@ Datasets.prototype.batchFeatureUpdate = function(update, dataset, callback) {
   }).entity();
 };
 
-},{"../../vendor/hat":36,"../../vendor/invariant":37,"../constants":4,"../make_service":6}],8:[function(require,module,exports){
+},{"../../vendor/hat":37,"../../vendor/invariant":38,"../constants":5,"../make_service":7}],9:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1617,7 +1765,7 @@ origin = typeof location !== 'undefined' ? new UrlBuilder(location.href).parts()
 
 module.exports = UrlBuilder;
 
-},{"./mime/type/application/x-www-form-urlencoded":24,"./util/mixin":31}],9:[function(require,module,exports){
+},{"./mime/type/application/x-www-form-urlencoded":25,"./util/mixin":32}],10:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1634,7 +1782,7 @@ rest.setPlatformDefaultClient(browser);
 
 module.exports = rest;
 
-},{"./client/default":11,"./client/xhr":12}],10:[function(require,module,exports){
+},{"./client/default":12,"./client/xhr":13}],11:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1690,7 +1838,7 @@ module.exports = function client(impl, target) {
 
 };
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1808,7 +1956,7 @@ defaultClient.setPlatformDefaultClient = function setPlatformDefaultClient(clien
 
 module.exports = client(defaultClient);
 
-},{"../client":10}],12:[function(require,module,exports){
+},{"../client":11}],13:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1977,7 +2125,7 @@ module.exports = client(function xhr(request) {
 	});
 });
 
-},{"../client":10,"../util/normalizeHeaderName":32,"../util/responsePromise":33}],13:[function(require,module,exports){
+},{"../client":11,"../util/normalizeHeaderName":33,"../util/responsePromise":34}],14:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2124,7 +2272,7 @@ interceptor.ComplexRequest = ComplexRequest;
 
 module.exports = interceptor;
 
-},{"./client":10,"./client/default":11,"./util/mixin":31,"./util/responsePromise":33}],14:[function(require,module,exports){
+},{"./client":11,"./client/default":12,"./util/mixin":32,"./util/responsePromise":34}],15:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2195,7 +2343,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":13,"../util/mixin":31}],15:[function(require,module,exports){
+},{"../interceptor":14,"../util/mixin":32}],16:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2233,7 +2381,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":13}],16:[function(require,module,exports){
+},{"../interceptor":14}],17:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2344,7 +2492,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":13,"../mime":20,"../mime/registry":21,"../util/attempt":27}],17:[function(require,module,exports){
+},{"../interceptor":14,"../mime":21,"../mime/registry":22,"../util/attempt":28}],18:[function(require,module,exports){
 /*
  * Copyright 2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2393,7 +2541,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../UrlBuilder":8,"../interceptor":13}],18:[function(require,module,exports){
+},{"../UrlBuilder":9,"../interceptor":14}],19:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2444,7 +2592,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../UrlBuilder":8,"../interceptor":13}],19:[function(require,module,exports){
+},{"../UrlBuilder":9,"../interceptor":14}],20:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2492,7 +2640,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":13,"../util/mixin":31,"../util/uriTemplate":35}],20:[function(require,module,exports){
+},{"../interceptor":14,"../util/mixin":32,"../util/uriTemplate":36}],21:[function(require,module,exports){
 /*
 * Copyright 2014-2016 the original author or authors
 * @license MIT, see LICENSE.txt for details
@@ -2535,7 +2683,7 @@ module.exports = {
 	parse: parse
 };
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2641,7 +2789,7 @@ registry.register('+json', registry.delegate('application/json'));
 
 module.exports = registry;
 
-},{"../mime":20,"./type/application/hal":22,"./type/application/json":23,"./type/application/x-www-form-urlencoded":24,"./type/multipart/form-data":25,"./type/text/plain":26}],22:[function(require,module,exports){
+},{"../mime":21,"./type/application/hal":23,"./type/application/json":24,"./type/application/x-www-form-urlencoded":25,"./type/multipart/form-data":26,"./type/text/plain":27}],23:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2771,7 +2919,7 @@ module.exports = {
 
 };
 
-},{"../../../interceptor/pathPrefix":18,"../../../interceptor/template":19,"../../../util/find":29,"../../../util/lazyPromise":30,"../../../util/responsePromise":33}],23:[function(require,module,exports){
+},{"../../../interceptor/pathPrefix":19,"../../../interceptor/template":20,"../../../util/find":30,"../../../util/lazyPromise":31,"../../../util/responsePromise":34}],24:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2810,7 +2958,7 @@ function createConverter(reviver, replacer) {
 
 module.exports = createConverter();
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2893,7 +3041,7 @@ module.exports = {
 
 };
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2959,7 +3107,7 @@ module.exports = {
 
 };
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2981,7 +3129,7 @@ module.exports = {
 
 };
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3010,7 +3158,7 @@ function attempt(work) {
 
 module.exports = attempt;
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
  * Copyright (c) 2009 Nicholas C. Zakas. All rights reserved.
  *
@@ -3158,7 +3306,7 @@ module.exports = {
 	decode: base64Decode
 };
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3191,7 +3339,7 @@ module.exports = {
 
 };
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3239,7 +3387,7 @@ function lazyPromise(work) {
 
 module.exports = lazyPromise;
 
-},{"./attempt":27}],31:[function(require,module,exports){
+},{"./attempt":28}],32:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3278,7 +3426,7 @@ function mixin(dest /*, sources... */) {
 
 module.exports = mixin;
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3308,7 +3456,7 @@ function normalizeHeaderName(name) {
 
 module.exports = normalizeHeaderName;
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3444,7 +3592,7 @@ responsePromise.promise = function (func) {
 
 module.exports = responsePromise;
 
-},{"./normalizeHeaderName":32}],34:[function(require,module,exports){
+},{"./normalizeHeaderName":33}],35:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3616,7 +3764,7 @@ module.exports = {
 
 };
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3778,7 +3926,7 @@ module.exports = {
 
 };
 
-},{"./uriEncoder":34}],36:[function(require,module,exports){
+},{"./uriEncoder":35}],37:[function(require,module,exports){
 /* eslint-disable */
 /**
  * hat
@@ -3817,7 +3965,7 @@ var hat = module.exports = function (bits, base) {
     else return res;
 };
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2015, Facebook, Inc.
@@ -3874,166 +4022,4 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 module.exports = invariant;
 
 }).call(this,require('_process'))
-},{"_process":38}],38:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-(function () {
-    try {
-        cachedSetTimeout = setTimeout;
-    } catch (e) {
-        cachedSetTimeout = function () {
-            throw new Error('setTimeout is not defined');
-        }
-    }
-    try {
-        cachedClearTimeout = clearTimeout;
-    } catch (e) {
-        cachedClearTimeout = function () {
-            throw new Error('clearTimeout is not defined');
-        }
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}]},{},[1]);
+},{"_process":2}]},{},[1]);
