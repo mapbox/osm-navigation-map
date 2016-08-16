@@ -1,31 +1,25 @@
+var DATASETS_ID = 'cir7dfh3b000oijmgxkaoy0tx';
+var DATASETS_BASE_URL = 'https://api.mapbox.com/datasets/v1/theplanemad/' + DATASETS_ID + '/';
+var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
+
 var MapboxClient = require('mapbox/lib/services/datasets');
-var dataset = 'cir7dfh3b000oijmgxkaoy0tx';
-var DATASETS_BASE = 'https://api.mapbox.com/datasets/v1/theplanemad/' + dataset + '/';
-var mapboxAccessDatasetToken = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
-var mapbox = new MapboxClient(mapboxAccessDatasetToken);
+var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
 
 var reviewer;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
+
 var map = new mapboxgl.Map({
-    container: 'map', // container id
-    // style: 'mapbox://styles/planemad/cir385mpq003xcjmdrwf8lj33',
+    container: 'map',
     style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq',
-    center: [-105.2, 44.6], // starting position
-    zoom: 3.5, // starting zoom
+    center: [-105.2, 44.6],
+    zoom: 3.5,
     hash: true,
     attributionControl: false
 });
 
-
-map.addControl(new mapboxgl.Navigation());
-var geocoder = new mapboxgl.Geocoder({
-    container: 'geocoder-container'
-});
-
-map.addControl(geocoder);
-
-
+map.addControl(new mapboxgl.Navigation({ position: 'top-right' }));
+map.addControl(new mapboxgl.Geocoder({ container: 'geocoder-container' }));
 
 // Layer for review markers
 var reviewedRestrictionsSource = new mapboxgl.GeoJSONSource({
@@ -47,9 +41,9 @@ var reviewedRestrictions = {
             ]
         },
         'circle-color': {
-            "property": "status",
-            "type": "categorical",
-            "stops": [
+            'property': 'status',
+            'type': 'categorical',
+            'stops': [
                 ['valid', '#02b3eb'],
                 ['redundant', 'yellow'],
                 ['invalid', 'red']
@@ -97,17 +91,14 @@ var toggleFilters = {
     }
 }
 
-
 // Add Mapillary sprites
 // var style = map.getStyle();
 // style.sprite = 'https://www.mapillary.com/sprites/';
 // map.setStyle(style);
 
-
 // Map ready
 map.on('style.load', function(e) {
     init();
-
 
     showOnlyLayers(toggleLayers, 'turn-restrictions');
 
@@ -457,7 +448,7 @@ function init() {
                     reviewer = $("input[name=reviewer]").val();
                     newfeaturesGeoJSON.properties["reviewed_by"] = reviewer;
                     popup.remove();
-                    mapbox.insertFeature(newfeaturesGeoJSON, dataset, function(err, response) {
+                    mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
                         console.log(response);
                         featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
                         reviewedRestrictionsSource.setData(featuresGeoJSON);
@@ -466,7 +457,7 @@ function init() {
                 // Delete feature on clicking delete
                 document.getElementById("deleteReview").onclick = function() {
                     popup.remove();
-                    mapbox.deleteFeature(newfeaturesGeoJSON["id"], dataset, function(err, response) {
+                    mapbox.deleteFeature(newfeaturesGeoJSON["id"], DATASETS_ID, function(err, response) {
                         console.log(response);
                     });
                 };
@@ -537,9 +528,9 @@ function refreshData(refreshRate) {
 
     function getFeatures(startID) {
 
-        var url = DATASETS_BASE + 'features';
+        var url = DATASETS_BASE_URL + 'features';
         var params = {
-            'access_token': mapboxAccessDatasetToken
+            'access_token': DATASETS_ACCESS_TOKEN
         };
 
         // Begin with the last feature of previous request
@@ -562,7 +553,12 @@ function refreshData(refreshRate) {
                 reviewedRestrictionsSource.setData(featuresGeoJSON);
             }
             reviewedRestrictionsSource.setData(featuresGeoJSON);
-            countProperty(featuresGeoJSON, 'status');
+
+            var stats = countProperty(featuresGeoJSON, 'status');
+            // Update counts in the page
+            for (var prop in stats) {
+                $('[data-count-feature="' + prop + '"]').html(stats[prop]);
+            } 
         });
     }
 
@@ -647,20 +643,11 @@ $('#mapillary-image').click(function() {
 });
 
 function countProperty(geojson, property) {
-    var stats = [];
-    for (var i in geojson.features) {
-        var val = geojson.features[i].properties[property];
-        if (val in stats) {
-            stats[val]++;
-        } else {
-            stats[val] = 0;
-        }
-    }
-    stats["total"] = geojson.features.length;
-
-    // Update counts in the page
-    for (var prop in stats) {
-        $('[data-count-feature="' + prop + '"]').html(stats[prop]);
-    }
-    console.log(stats);
+    var stats = {};
+    geojson.features.forEach(function(feature) {
+        var val = feature.properties[property];
+        stats[val] = stats[val] + 1 || 1;
+    });
+    stats['total'] = geojson.features.length;
+    return stats;
 }
