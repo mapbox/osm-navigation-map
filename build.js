@@ -326,6 +326,37 @@ function init() {
         "filter": mapillaryRestrictionsFilter
     };
 
+    var mapillaryImages = {
+        'id': 'mapillaryImages',
+        'type': 'circle',
+        'source': 'mapillaryCoverage',
+        'source-layer': 'mapillary-images',
+        'layout': {
+            'visibility': 'visible'
+        },
+        'paint': {
+            'circle-radius': 5,
+            'circle-color': 'red'
+        },
+        'filter': ['==', 'key', '']
+    };
+
+    var mapillaryImagesHighlight = {
+        'id': 'mapillaryImagesHighlight',
+        'type': 'circle',
+        'source': 'mapillaryCoverage',
+        'source-layer': 'mapillary-images',
+        'layout': {
+            'visibility': 'visible'
+        },
+        'paint': {
+            'circle-radius': 10,
+            'circle-opacity': 0.3,
+            'circle-color': 'white'
+        },
+        'filter': ['==', 'key', '']
+    };
+
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
 
@@ -335,6 +366,8 @@ function init() {
     map.addLayer(mapillaryTraffic, 'noturn');
     map.addLayer(mapillaryTrafficRestrictionsLabel);
 
+    map.addLayer(mapillaryImages);
+    map.addLayer(mapillaryImagesHighlight);
 
     map.on('click', function(e) {
 
@@ -347,16 +380,36 @@ function init() {
 
 
         if (mapillaryRestrictions.length) {
-            var imageKey = JSON.parse(mapillaryRestrictions[0].properties.rects)[0].image_key;
-            var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
-            map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', mapillaryRestrictions[0].properties.rects]);
-            $('#mapillary-image').removeClass('hidden');
-            $('#mapillary-image').attr('src', imageUrl);
-            // Log properties
-            console.log(mapillaryRestrictions[0].properties);
+            var restriction = mapillaryRestrictions[0];
+            var rects = restriction.properties.rects;
+            var imageKeys = JSON.parse(rects).map(function(rect) { return rect.image_key; });
+
+            map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', rects]);
+            map.setFilter('mapillaryImages', ['in', 'key'].concat(imageKeys));
+            map.setFilter('mapillaryImagesHighlight', ['==', 'key', '']);
+
+            $('#mapillary-image').hide();
+            $('#mapillary-image').attr('src', '');
 
             openInJOSM();
+        }
 
+        var mapillaryImages = map.queryRenderedFeatures([
+            [e.point.x - 5, e.point.y - 5],
+            [e.point.x + 5, e.point.y + 5]
+        ], {
+            layers: ['mapillaryImages']
+        });
+
+        if (mapillaryImages.length) {
+            var image = mapillaryImages[0];
+            var imageKey = image.properties.key;
+            var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
+
+            map.setFilter('mapillaryImagesHighlight', ['==', 'key', image.properties.key]);
+
+            $('#mapillary-image').show();
+            $('#mapillary-image').attr('src', imageUrl);
         }
 
         // Show popup of OSM feature
