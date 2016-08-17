@@ -149,7 +149,7 @@ function init() {
             "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
         ],
         "minzoon": 14,
-        "maxzoom": 16
+        "maxzoom": 14
     };
 
     var mapillaryCoverage = {
@@ -157,8 +157,7 @@ function init() {
         "tiles": [
             "http://d25uarhxywzl1j.cloudfront.net/v0.1/{z}/{x}/{y}.mvt"
         ],
-        "minzoom": 2,
-        "maxzoom": 16
+        "maxzoom": 14
     };
 
     map.addSource("mapillary", mapillaryTrafficSigns);
