@@ -5,6 +5,8 @@ var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAw
 var MapboxClient = require('mapbox/lib/services/datasets');
 var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
 
+var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
+
 var reviewer;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
@@ -87,7 +89,7 @@ var toggleFilters = {
     'mapbox-team': {
         'filter-mode': 'any',
         'filter-compare': ['==', 'meta_user'],
-        'filter-values': ["ruthmaben", "PlaneMad", "srividya_c", "Chetan_Gowda", "ramyaragupathy", "nikhilprabhakar", "jinalfoflia", "pratikyadav", "aarthy", "oini", "Jothirnadh", "saikabhi", "geohacker", "shvrm", "manings", "sanjayb", "Arunasank", "nammala", "poornibadrinath"]
+        'filter-values': MAPBOX_DATA_TEAM
     }
 }
 

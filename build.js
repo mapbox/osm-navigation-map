@@ -6,6 +6,8 @@ var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAw
 var MapboxClient = require('mapbox/lib/services/datasets');
 var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
 
+var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
+
 var reviewer;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
@@ -88,7 +90,7 @@ var toggleFilters = {
     'mapbox-team': {
         'filter-mode': 'any',
         'filter-compare': ['==', 'meta_user'],
-        'filter-values': ["ruthmaben", "PlaneMad", "srividya_c", "Chetan_Gowda", "ramyaragupathy", "nikhilprabhakar", "jinalfoflia", "pratikyadav", "aarthy", "oini", "Jothirnadh", "saikabhi", "geohacker", "shvrm", "manings", "sanjayb", "Arunasank", "nammala", "poornibadrinath"]
+        'filter-values': MAPBOX_DATA_TEAM
     }
 }
 
@@ -555,11 +557,11 @@ function refreshData(refreshRate) {
             }
             reviewedRestrictionsSource.setData(featuresGeoJSON);
 
+            // Update counts on the page
             var stats = countProperty(featuresGeoJSON, 'status');
-            // Update counts in the page
             for (var prop in stats) {
                 $('[data-count-feature="' + prop + '"]').html(stats[prop]);
-            } 
+            }
         });
     }
 
@@ -652,169 +654,334 @@ function countProperty(geojson, property) {
     stats['total'] = geojson.features.length;
     return stats;
 }
-},{"mapbox/lib/services/datasets":8}],2:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
+},{"mapbox-data-team":3,"mapbox/lib/services/datasets":9}],2:[function(require,module,exports){
+'use strict';
 
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-(function () {
-    try {
-        cachedSetTimeout = setTimeout;
-    } catch (e) {
-        cachedSetTimeout = function () {
-            throw new Error('setTimeout is not defined');
+module.exports = {
+    'team': [
+        {
+            'username': 'Aaron Lidman',
+            'uid': '53073',
+            'fname': 'Aaron',
+            'lname': 'Lidman',
+            'fullname': 'Aaron Lidman'
+        },
+        {
+            'username': 'aarthy',
+            'uid': '2985232',
+            'fname': 'Aarthy',
+            'lname': 'Chandrasekhar',
+            'fullname': 'Aarthy Chandrasekhar'
+        },
+        {
+            'username': 'saikabhi',
+            'uid': '3029661',
+            'fname': 'Abhishek',
+            'lname': 'Saikia',
+            'fullname': 'Abhishek Saikia'
+        },
+        {
+            'username': 'ajithranka',
+            'uid': '3878839',
+            'fname': 'Ajith',
+            'lname': 'Ranka',
+            'fullname': 'Ajith Ranka'
+        },
+        {
+            'username': 'lxbarth',
+            'uid': '589596',
+            'fname': 'Alex',
+            'lname': 'Barth',
+            'fullname': 'Alex Barth'
+        },
+        {
+            'username': 'andygol',
+            'uid': '94578',
+            'fname': 'Andrey',
+            'lname': 'Golovin',
+            'fullname': 'Andrey Golovin'
+        },
+        {
+            'username': 'PlaneMad',
+            'uid': '1306',
+            'fname': 'Arun',
+            'lname': 'Ganesh',
+            'fullname': 'Arun Ganesh'
+        },
+        {
+            'username': 'Arunasank',
+            'uid': '2477516',
+            'fname': 'Aruna',
+            'lname': 'Sankaranarayanan',
+            'fullname': 'Aruna Sankaranarayanan'
+        },
+        {
+            'username': 'bkowshik',
+            'uid': '1087876',
+            'fname': 'Bhargav',
+            'lname': 'Kowshik',
+            'fullname': 'Bhargav Kowshik'
+        },
+        {
+            'username': 'calfarome',
+            'uid': '2511706',
+            'fname': 'Cesar',
+            'lname': 'Alfaro',
+            'fullname': 'Cesar Alfaro'
+        },
+        {
+            'username': 'Chetan_Gowda',
+            'uid': '2644101',
+            'fname': 'Chethan',
+            'lname': 'Gowda',
+            'fullname': 'Chethan Gowda'
+        },
+        {
+            'username': 'dannykath',
+            'uid': '2226712',
+            'fname': 'Danny',
+            'mname': 'Aiquipa',
+            'lname': 'Pacheco',
+            'fullname': 'Danny Aiquipa Pacheco'
+        },
+        {
+            'username': 'ediyes',
+            'uid': '1240849',
+            'fname': 'Edith',
+            'lname': 'Quispe',
+            'fullname': 'Edith Quispe'
+        },
+        {
+            'username': 'samely',
+            'uid': '2512300',
+            'fname': 'Eliane Sammy',
+            'mname': 'Joyo',
+            'lname': 'Meneses',
+            'fullname': 'Eliane Sammy Joyo Meneses'
+        },
+        {
+            'username': 'yurasi',
+            'uid': '3526564',
+            'fname': 'Galia',
+            'mname': 'Eyzaguirre',
+            'lname': 'Luque',
+            'fullname': 'Galia Eyzaguirre Luque'
+        },
+        {
+            'username': 'jinalfoflia',
+            'uid': '2847988',
+            'fname': 'Jinal',
+            'lname': 'Foflia',
+            'fullname': 'Jinal Foflia'
+        },
+        {
+            'username': 'Jothirnadh',
+            'uid': '2015224',
+            'fname': 'Jothirnadh',
+            'lname': 'Sai',
+            'fullname': 'Jothirnadh Sai'
+        },
+        {
+            'username': 'karitotp',
+            'uid': '2748195',
+            'fname': 'Karito',
+            'mname': 'Tenorio',
+            'lname': 'Palomino',
+            'fullname': 'Karito Tenorio Palomino'
+        },
+        {
+            'username': 'Luis36995',
+            'uid': '1829683',
+            'fname': 'Luis',
+            'mname': 'Alanya',
+            'lname': 'Ortega',
+            'fullname': 'Luis Alanya Ortega'
+        },
+        {
+            'username': 'Maanya',
+            'uid': '3572302',
+            'fname': 'Maanya',
+            'lname': 'Umashaanker',
+            'fullname': 'Maanya Umashaanker'
+        },
+        {
+            'username': 'manings',
+            'uid': '3272286',
+            'fname': 'Maning',
+            'lname': 'Sambale',
+            'fullname': 'Maning Sambale'
+        },
+        {
+            'username': 'manoharuss',
+            'uid': '3769434',
+            'fname': 'Manohar',
+            'lname': 'Erikipati',
+            'fullname': 'Manohar Erikipati'
+        },
+        {
+            'username': 'nammala',
+            'uid': '3479270',
+            'fname': 'Krishna',
+            'lname': 'Nammala',
+            'fullname': 'Krishna Nammala'
+        },
+        {
+            'username': 'nikhilprabhakar',
+            'uid': '2835928',
+            'fname': 'Nikhil',
+            'lname': 'Prabhakar',
+            'fullname': 'Nikhil Prabhakar'
+        },
+        {
+            'username': 'oini',
+            'uid': '3057995',
+            'fname': 'Oindrila',
+            'lname': 'Gupta',
+            'fullname': 'Oindrila Gupta'
+        },
+        {
+            'username': 'ridixcr',
+            'uid': '2508151',
+            'fname': 'Pavel',
+            'lname': 'Baez',
+            'fullname': 'Pavel Baez'
+        },
+        {
+            'username': 'piligab',
+            'uid': '3877019',
+            'fname': 'Pilar Gabriela',
+            'mname': 'Serrano',
+            'lname': 'Quispe',
+            'fullname': 'Pilar Gabriela Serrano Quispe'
+        },
+        {
+            'username': 'poornibadrinath',
+            'uid': '1597155',
+            'fname': 'Poornima',
+            'lname': 'Badrinath',
+            'fullname': 'Poornima Badrinath'
+        },
+        {
+            'username': 'pratikyadav',
+            'uid': '2905914',
+            'fname': 'Pratik',
+            'lname': 'Yadav',
+            'fullname': 'Pratik Yadav'
+        },
+        {
+            'username': 'ramyaragupathy',
+            'uid': '2823295',
+            'fname': 'Ramya',
+            'lname': 'Ragupathy',
+            'fullname': 'Ramya Ragupathy'
+        },
+        {
+            'username': 'RichRico',
+            'uid': '2219338',
+            'fname': 'Richman',
+            'mname': 'Pariona',
+            'lname': 'Torres',
+            'fullname': 'Richman Pariona Torres'
+        },
+        {
+            'username': 'Rub21',
+            'uid': '510836',
+            'fname': 'Ruben',
+            'lname': 'Lopez Mendoza',
+            'fullname': 'Ruben Lopez Mendoza'
+        },
+        {
+            'username': 'ruthmaben',
+            'uid': '2554698',
+            'fname': 'Ruth',
+            'lname': 'Maben',
+            'fullname': 'Ruth Maben'
+        },
+        {
+            'username': 'geohacker',
+            'uid': '146675',
+            'fname': 'Sajjad',
+            'lname': 'Anwar',
+            'fullname': 'Sajjad Anwar'
+        },
+        {
+            'username': 'sanjayb',
+            'uid': '261012',
+            'fname': 'Sanjay',
+            'lname': 'Bhangar',
+            'fullname': 'Sanjay Bhangar'
+        },
+        {
+            'username': 'shvrm',
+            'uid': '2306749',
+            'fname': 'Sivaram',
+            'lname': 'Ramachandran',
+            'fullname': 'Sivaram Ramachandran'
+        },
+        {
+            'username': 'srividya_c',
+            'uid': '2115749',
+            'fname': 'Srividya',
+            'lname': 'Bharadwaj',
+            'fullname': 'Srividya Bharadwaj'
         }
-    }
-    try {
-        cachedClearTimeout = clearTimeout;
-    } catch (e) {
-        cachedClearTimeout = function () {
-            throw new Error('clearTimeout is not defined');
-        }
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
+    ]
 };
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
 
 },{}],3:[function(require,module,exports){
+'use strict';
+
+var team = require('./data/team.js').team;
+
+function getData(returnField, searchField, value, json) {
+    var teamJSON = json || team;
+    if (!searchField) {
+        return teamJSON.map(function (member) {
+            return member[returnField];
+        }).sort();
+    } else {
+        return teamJSON.filter(function (member) {
+            return (member[searchField].toLowerCase() === value.toLowerCase());
+        }).map(function (member) {
+            return member[returnField];
+        }).sort();
+    }
+}
+
+function getUsernames(json) {
+    return getData('username', null, null, json);
+}
+
+function getUserIds(json) {
+    return getData('uid', null, null, json);
+}
+
+function getUsernamesFor(field, value, json) {
+    return getData('username', field, value, json);
+}
+
+function getUserIdsFor(field, value, json) {
+    return getData('uid', field, value, json);
+}
+
+function getNames(json) {
+    return getData('fullname', null, null, json);
+}
+
+function getEverything(json) {
+    return json || team;
+}
+
+module.exports = {
+    'getUsernames': getUsernames,
+    'getNames': getNames,
+    'getUserIds': getUserIds,
+    'getUsernamesFor': getUsernamesFor,
+    'getUserIdsFor': getUserIdsFor,
+    'getEverything': getEverything
+};
+
+},{"./data/team.js":2}],4:[function(require,module,exports){
 'use strict';
 
 var interceptor = require('rest/interceptor');
@@ -846,7 +1013,7 @@ var callbackify = interceptor({
 
 module.exports = callbackify;
 
-},{"rest/interceptor":14}],4:[function(require,module,exports){
+},{"rest/interceptor":15}],5:[function(require,module,exports){
 'use strict';
 
 var rest = require('rest');
@@ -866,7 +1033,7 @@ module.exports = function(config) {
     .wrap(callbackify);
 };
 
-},{"./callbackify":3,"rest":10,"rest/interceptor/defaultRequest":15,"rest/interceptor/errorCode":16,"rest/interceptor/mime":17,"rest/interceptor/params":18,"rest/interceptor/pathPrefix":19,"rest/interceptor/template":20}],5:[function(require,module,exports){
+},{"./callbackify":4,"rest":11,"rest/interceptor/defaultRequest":16,"rest/interceptor/errorCode":17,"rest/interceptor/mime":18,"rest/interceptor/params":19,"rest/interceptor/pathPrefix":20,"rest/interceptor/template":21}],6:[function(require,module,exports){
 // We keep all of the constants that declare endpoints in one
 // place, so that we could concievably update this for API layout
 // revisions.
@@ -909,7 +1076,7 @@ module.exports.API_STYLES_SPRITE_DELETE_ICON = '/styles/v1/{owner}/{styleid}/spr
 
 module.exports.API_STYLES_FONT_GLYPH_RANGES = '/fonts/v1/{owner}/{font}/{start}-{end}.pbf'
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 var b64 = require('rest/util/base64');
@@ -943,7 +1110,7 @@ function getUser(token) {
 
 module.exports = getUser;
 
-},{"rest/util/base64":29}],7:[function(require,module,exports){
+},{"rest/util/base64":30}],8:[function(require,module,exports){
 'use strict';
 
 var invariant = require('../vendor/invariant');
@@ -1001,7 +1168,7 @@ function makeService(name) {
 
 module.exports = makeService;
 
-},{"../vendor/invariant":38,"./client":4,"./constants":5,"./get_user":6}],8:[function(require,module,exports){
+},{"../vendor/invariant":39,"./client":5,"./constants":6,"./get_user":7}],9:[function(require,module,exports){
 'use strict';
 
 var invariant = require('../../vendor/invariant'),
@@ -1547,7 +1714,7 @@ Datasets.prototype.batchFeatureUpdate = function(update, dataset, callback) {
   }).entity();
 };
 
-},{"../../vendor/hat":37,"../../vendor/invariant":38,"../constants":5,"../make_service":7}],9:[function(require,module,exports){
+},{"../../vendor/hat":38,"../../vendor/invariant":39,"../constants":6,"../make_service":8}],10:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1765,7 +1932,7 @@ origin = typeof location !== 'undefined' ? new UrlBuilder(location.href).parts()
 
 module.exports = UrlBuilder;
 
-},{"./mime/type/application/x-www-form-urlencoded":25,"./util/mixin":32}],10:[function(require,module,exports){
+},{"./mime/type/application/x-www-form-urlencoded":26,"./util/mixin":33}],11:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1782,7 +1949,7 @@ rest.setPlatformDefaultClient(browser);
 
 module.exports = rest;
 
-},{"./client/default":12,"./client/xhr":13}],11:[function(require,module,exports){
+},{"./client/default":13,"./client/xhr":14}],12:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1838,7 +2005,7 @@ module.exports = function client(impl, target) {
 
 };
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -1956,7 +2123,7 @@ defaultClient.setPlatformDefaultClient = function setPlatformDefaultClient(clien
 
 module.exports = client(defaultClient);
 
-},{"../client":11}],13:[function(require,module,exports){
+},{"../client":12}],14:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2125,7 +2292,7 @@ module.exports = client(function xhr(request) {
 	});
 });
 
-},{"../client":11,"../util/normalizeHeaderName":33,"../util/responsePromise":34}],14:[function(require,module,exports){
+},{"../client":12,"../util/normalizeHeaderName":34,"../util/responsePromise":35}],15:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2272,7 +2439,7 @@ interceptor.ComplexRequest = ComplexRequest;
 
 module.exports = interceptor;
 
-},{"./client":11,"./client/default":12,"./util/mixin":32,"./util/responsePromise":34}],15:[function(require,module,exports){
+},{"./client":12,"./client/default":13,"./util/mixin":33,"./util/responsePromise":35}],16:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2343,7 +2510,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":14,"../util/mixin":32}],16:[function(require,module,exports){
+},{"../interceptor":15,"../util/mixin":33}],17:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2381,7 +2548,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":14}],17:[function(require,module,exports){
+},{"../interceptor":15}],18:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2492,7 +2659,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":14,"../mime":21,"../mime/registry":22,"../util/attempt":28}],18:[function(require,module,exports){
+},{"../interceptor":15,"../mime":22,"../mime/registry":23,"../util/attempt":29}],19:[function(require,module,exports){
 /*
  * Copyright 2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2541,7 +2708,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../UrlBuilder":9,"../interceptor":14}],19:[function(require,module,exports){
+},{"../UrlBuilder":10,"../interceptor":15}],20:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2592,7 +2759,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../UrlBuilder":9,"../interceptor":14}],20:[function(require,module,exports){
+},{"../UrlBuilder":10,"../interceptor":15}],21:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2640,7 +2807,7 @@ module.exports = interceptor({
 	}
 });
 
-},{"../interceptor":14,"../util/mixin":32,"../util/uriTemplate":36}],21:[function(require,module,exports){
+},{"../interceptor":15,"../util/mixin":33,"../util/uriTemplate":37}],22:[function(require,module,exports){
 /*
 * Copyright 2014-2016 the original author or authors
 * @license MIT, see LICENSE.txt for details
@@ -2683,7 +2850,7 @@ module.exports = {
 	parse: parse
 };
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2789,7 +2956,7 @@ registry.register('+json', registry.delegate('application/json'));
 
 module.exports = registry;
 
-},{"../mime":21,"./type/application/hal":23,"./type/application/json":24,"./type/application/x-www-form-urlencoded":25,"./type/multipart/form-data":26,"./type/text/plain":27}],23:[function(require,module,exports){
+},{"../mime":22,"./type/application/hal":24,"./type/application/json":25,"./type/application/x-www-form-urlencoded":26,"./type/multipart/form-data":27,"./type/text/plain":28}],24:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2919,7 +3086,7 @@ module.exports = {
 
 };
 
-},{"../../../interceptor/pathPrefix":19,"../../../interceptor/template":20,"../../../util/find":30,"../../../util/lazyPromise":31,"../../../util/responsePromise":34}],24:[function(require,module,exports){
+},{"../../../interceptor/pathPrefix":20,"../../../interceptor/template":21,"../../../util/find":31,"../../../util/lazyPromise":32,"../../../util/responsePromise":35}],25:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -2958,7 +3125,7 @@ function createConverter(reviver, replacer) {
 
 module.exports = createConverter();
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3041,7 +3208,7 @@ module.exports = {
 
 };
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3107,7 +3274,7 @@ module.exports = {
 
 };
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3129,7 +3296,7 @@ module.exports = {
 
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3158,7 +3325,7 @@ function attempt(work) {
 
 module.exports = attempt;
 
-},{}],29:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 /*
  * Copyright (c) 2009 Nicholas C. Zakas. All rights reserved.
  *
@@ -3306,7 +3473,7 @@ module.exports = {
 	decode: base64Decode
 };
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3339,7 +3506,7 @@ module.exports = {
 
 };
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /*
  * Copyright 2013-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3387,7 +3554,7 @@ function lazyPromise(work) {
 
 module.exports = lazyPromise;
 
-},{"./attempt":28}],32:[function(require,module,exports){
+},{"./attempt":29}],33:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3426,7 +3593,7 @@ function mixin(dest /*, sources... */) {
 
 module.exports = mixin;
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /*
  * Copyright 2012-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3456,7 +3623,7 @@ function normalizeHeaderName(name) {
 
 module.exports = normalizeHeaderName;
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /*
  * Copyright 2014-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3592,7 +3759,7 @@ responsePromise.promise = function (func) {
 
 module.exports = responsePromise;
 
-},{"./normalizeHeaderName":33}],35:[function(require,module,exports){
+},{"./normalizeHeaderName":34}],36:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3764,7 +3931,7 @@ module.exports = {
 
 };
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /*
  * Copyright 2015-2016 the original author or authors
  * @license MIT, see LICENSE.txt for details
@@ -3926,7 +4093,7 @@ module.exports = {
 
 };
 
-},{"./uriEncoder":35}],37:[function(require,module,exports){
+},{"./uriEncoder":36}],38:[function(require,module,exports){
 /* eslint-disable */
 /**
  * hat
@@ -3965,7 +4132,7 @@ var hat = module.exports = function (bits, base) {
     else return res;
 };
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 (function (process){
 /**
  * Copyright 2013-2015, Facebook, Inc.
@@ -4022,4 +4189,166 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 module.exports = invariant;
 
 }).call(this,require('_process'))
-},{"_process":2}]},{},[1]);
+},{"_process":40}],40:[function(require,module,exports){
+// shim for using process in browser
+var process = module.exports = {};
+
+// cached from whatever global is present so that test runners that stub it
+// don't break things.  But we need to wrap it in a try catch in case it is
+// wrapped in strict mode code which doesn't define any globals.  It's inside a
+// function because try/catches deoptimize in certain engines.
+
+var cachedSetTimeout;
+var cachedClearTimeout;
+
+(function () {
+    try {
+        cachedSetTimeout = setTimeout;
+    } catch (e) {
+        cachedSetTimeout = function () {
+            throw new Error('setTimeout is not defined');
+        }
+    }
+    try {
+        cachedClearTimeout = clearTimeout;
+    } catch (e) {
+        cachedClearTimeout = function () {
+            throw new Error('clearTimeout is not defined');
+        }
+    }
+} ())
+function runTimeout(fun) {
+    if (cachedSetTimeout === setTimeout) {
+        //normal enviroments in sane situations
+        return setTimeout(fun, 0);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedSetTimeout(fun, 0);
+    } catch(e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+            return cachedSetTimeout.call(null, fun, 0);
+        } catch(e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+            return cachedSetTimeout.call(this, fun, 0);
+        }
+    }
+
+
+}
+function runClearTimeout(marker) {
+    if (cachedClearTimeout === clearTimeout) {
+        //normal enviroments in sane situations
+        return clearTimeout(marker);
+    }
+    try {
+        // when when somebody has screwed with setTimeout but no I.E. maddness
+        return cachedClearTimeout(marker);
+    } catch (e){
+        try {
+            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+            return cachedClearTimeout.call(null, marker);
+        } catch (e){
+            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+            return cachedClearTimeout.call(this, marker);
+        }
+    }
+
+
+
+}
+var queue = [];
+var draining = false;
+var currentQueue;
+var queueIndex = -1;
+
+function cleanUpNextTick() {
+    if (!draining || !currentQueue) {
+        return;
+    }
+    draining = false;
+    if (currentQueue.length) {
+        queue = currentQueue.concat(queue);
+    } else {
+        queueIndex = -1;
+    }
+    if (queue.length) {
+        drainQueue();
+    }
+}
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    var timeout = runTimeout(cleanUpNextTick);
+    draining = true;
+
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        while (++queueIndex < len) {
+            if (currentQueue) {
+                currentQueue[queueIndex].run();
+            }
+        }
+        queueIndex = -1;
+        len = queue.length;
+    }
+    currentQueue = null;
+    draining = false;
+    runClearTimeout(timeout);
+}
+
+process.nextTick = function (fun) {
+    var args = new Array(arguments.length - 1);
+    if (arguments.length > 1) {
+        for (var i = 1; i < arguments.length; i++) {
+            args[i - 1] = arguments[i];
+        }
+    }
+    queue.push(new Item(fun, args));
+    if (queue.length === 1 && !draining) {
+        runTimeout(drainQueue);
+    }
+};
+
+// v8 likes predictible objects
+function Item(fun, array) {
+    this.fun = fun;
+    this.array = array;
+}
+Item.prototype.run = function () {
+    this.fun.apply(null, this.array);
+};
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}]},{},[1]);
