@@ -75,3 +75,11 @@
 #feature-stats [data-count-feature]{
   font-weight: bold;
 }
+
+/*Mapbox geocoder control style override to fix issue with nav control*/
+.mapboxgl-ctrl-geocoder {
+  width: 100%;
+}
+#geocoder-container{
+  width:30%;
+}
