@@ -13,7 +13,7 @@ mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kzt
 
 var map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/planemad/cinpwopfb008hcam0mqxbxwuq',
+    style: 'mapbox://styles/planemad/cir385mpq003xcjmdrwf8lj33',
     center: [-105.2, 44.6],
     zoom: 3.5,
     hash: true,
@@ -102,7 +102,7 @@ var toggleFilters = {
 map.on('style.load', function(e) {
     init();
 
-    showOnlyLayers(toggleLayers, 'turn-restrictions');
+    //showOnlyLayers(toggleLayers, 'turn-restrictions');
 
     // Highlight only team edits
     // toggleLayerFilters('turn-restrictions','mapbox-team');
@@ -166,7 +166,7 @@ function init() {
     map.addLayer(reviewedRestrictions);
 
     // Fetch data every 10 minutes
-    refreshData(10);
+    //refreshData(10);
 
     var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de","mandatory--proceed-straight-or-turn-left--de","mandatory--turn-right--de","mandatory--proceed-straight-or-turn-right--de","mandatory--proceed-straight--de","mandatory--turn-left-ahead--de","mandatory--turn-right-ahead--de"]
 
@@ -214,17 +214,16 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "line-color": '#2e870a',
+            "line-color": '#1a5900',
             "line-width": {
                 "stops": [
-                    [8, 1],
-                    [15, 3]
+                    [8, 3],
+                    [15, 7]
                 ]
             },
             "line-opacity": {
                 "stops": [
-                    [8, 0.2],
-                    [17, 1]
+                    [8, 0.4]
                 ]
             }
         }
@@ -612,7 +611,7 @@ function refreshData(refreshRate) {
             // Update counts in the page
             for (var prop in stats) {
                 $('[data-count-feature="' + prop + '"]').html(stats[prop]);
-            } 
+            }
         });
     }
 
