@@ -92,7 +92,7 @@ var reviewedRestrictions = {
         'circle-radius': {
             "stops": [
                 [5, 1],
-                [14, 10]
+                [14, 14]
             ]
         },
         'circle-blur': {
@@ -376,7 +376,7 @@ function init() {
             "visibility": "none",
             'icon-image': '{value}',
             'icon-allow-overlap': true,
-            'icon-size': 0.6
+            'icon-size': 0.8
         },
         "paint": {
             "text-color": "hsl(112, 100%, 50%)",
