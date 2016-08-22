@@ -25,8 +25,12 @@ var map = new mapboxgl.Map({
     attributionControl: false
 });
 
-map.addControl(new mapboxgl.Navigation({ position: 'top-right' }));
-map.addControl(new mapboxgl.Geocoder({ container: 'geocoder-container' }));
+map.addControl(new mapboxgl.Navigation({
+    position: 'top-right'
+}));
+map.addControl(new mapboxgl.Geocoder({
+    container: 'geocoder-container'
+}));
 
 // Layer for review markers
 var reviewedRestrictionsSource = new mapboxgl.GeoJSONSource({
@@ -44,7 +48,13 @@ var reviewedRestrictions = {
         'circle-radius': {
             "stops": [
                 [5, 1],
-                [15, 15]
+                [14, 14]
+            ]
+        },
+        'circle-blur': {
+            'stops': [
+                [12, 1],
+                [14, 0]
             ]
         },
         'circle-color': {
@@ -55,8 +65,7 @@ var reviewedRestrictions = {
                 ['redundant', 'yellow'],
                 ['invalid', 'red']
             ]
-        },
-        'circle-blur': .9
+        }
     }
 };
 
@@ -173,7 +182,7 @@ function init() {
     // Fetch data every 10 minutes
     refreshData(10);
 
-    var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de","mandatory--proceed-straight-or-turn-left--de","mandatory--turn-right--de","mandatory--proceed-straight-or-turn-right--de","mandatory--proceed-straight--de","mandatory--turn-left-ahead--de","mandatory--turn-right-ahead--de"]
+    var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de", "mandatory--proceed-straight-or-turn-left--de", "mandatory--turn-right--de", "mandatory--proceed-straight-or-turn-right--de", "mandatory--proceed-straight--de", "mandatory--turn-left-ahead--de", "mandatory--turn-right-ahead--de"]
 
     var mapillaryTraffic = {
         "id": "mapillaryTraffic",
@@ -320,12 +329,21 @@ function init() {
             "text-offset": [0, 2],
             "text-font": ["Clan Offc Pro Bold"],
             "icon-image": "{value}",
-            "visibility": "none"
+            "visibility": "none",
+            'icon-image': '{value}',
+            'icon-allow-overlap': true,
+            'icon-size': 0.8
         },
         "paint": {
             "text-color": "hsl(112, 100%, 50%)",
             "text-halo-color": "black",
-            "text-halo-width": 1
+            "text-halo-width": 1,
+            "text-opacity": {
+                "stops": [
+                    [15, 0],
+                    [16, 1]
+                ]
+            }
         },
         "filter": mapillaryRestrictionsFilter
     };
@@ -373,7 +391,7 @@ function init() {
     map.addLayer(mapillaryImages);
     map.addLayer(mapillaryImagesHighlight);
 
-    document.getElementById('logout').onclick = function () {
+    document.getElementById('logout').onclick = function() {
         auth.logout();
         auth.update();
     };
@@ -391,7 +409,9 @@ function init() {
         if (mapillaryRestrictions.length) {
             var restriction = mapillaryRestrictions[0];
             var rects = restriction.properties.rects;
-            var imageKeys = JSON.parse(rects).map(function(rect) { return rect.image_key; });
+            var imageKeys = JSON.parse(rects).map(function(rect) {
+                return rect.image_key;
+            });
 
             map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', rects]);
             map.setFilter('mapillaryImages', ['in', 'key'].concat(imageKeys));
@@ -488,8 +508,7 @@ function init() {
                 if (auth.authenticated()) {
                     formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><input type='text' name='reviewer'></input></fieldset>";
                     popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style=''>Delete</a></form>";
-                }
-                else {
+                } else {
                     formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label></fieldset>";
                     popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='authenticate' class='button col4' href='#'>Login</a></form>";
                 }
@@ -511,7 +530,7 @@ function init() {
                     newfeaturesGeoJSON.geometry.coordinates = e.lngLat.toArray();
                 }
 
-                if(auth.authenticated()) {
+                if (auth.authenticated()) {
                     var userName = document.getElementById('user').innerHTML;
                     $("input[name=reviewer]").val(userName);
 
@@ -520,7 +539,7 @@ function init() {
                         newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
                         reviewer = $("input[name=reviewer]").val();
                         newfeaturesGeoJSON.properties["reviewed_by"] = reviewer;
-                        newfeaturesGeoJSON.properties["reviewed_on"] =  Date.now();
+                        newfeaturesGeoJSON.properties["reviewed_on"] = Date.now();
                         newfeaturesGeoJSON.properties["mapillary_id"] = mapillaryId;
                         popup.remove();
                         mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
@@ -537,14 +556,14 @@ function init() {
                         });
                     };
 
-                    document.getElementById('logout').onclick = function () {
+                    document.getElementById('logout').onclick = function() {
                         auth.logout();
                         auth.update();
                         popup.remove();
                     };
                 } else {
-                    document.getElementById("authenticate").onclick = function () {
-                        auth.authenticate(function () {
+                    document.getElementById("authenticate").onclick = function() {
+                        auth.authenticate(function() {
                             auth.update();
                         });
                     };
@@ -646,7 +665,7 @@ function refreshData(refreshRate) {
             // Update counts in the page
             for (var prop in stats) {
                 $('[data-count-feature="' + prop + '"]').html(stats[prop]);
-            } 
+            }
         });
     }
 
