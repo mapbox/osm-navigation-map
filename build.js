@@ -25,6 +25,7 @@ function showDetails() {
 }
 
 function hideDetails() {
+    document.getElementById('user').innerHTML = '';
     document.getElementById('user').style.display = 'none';
 }
 
