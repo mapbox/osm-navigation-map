@@ -8,6 +8,7 @@ var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
 var reviewer;
+var mapillaryId;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 
@@ -403,6 +404,7 @@ function init() {
         if (mapillaryImages.length) {
             var image = mapillaryImages[0];
             var imageKey = image.properties.key;
+            mapillaryId = imageKey;
             var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
 
             map.setFilter('mapillaryImagesHighlight', ['==', 'key', image.properties.key]);
@@ -501,6 +503,8 @@ function init() {
                     newfeaturesGeoJSON.properties["status"] = $("input[name=review]:checked").val();
                     reviewer = $("input[name=reviewer]").val();
                     newfeaturesGeoJSON.properties["reviewed_by"] = reviewer;
+                    newfeaturesGeoJSON.properties["reviewed_on"] =  Date.now();
+                    newfeaturesGeoJSON.properties["mapillary_id"] = mapillaryId;
                     popup.remove();
                     mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
                         console.log(response);
