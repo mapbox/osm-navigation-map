@@ -75,6 +75,22 @@
 #feature-stats [data-count-feature]{
   font-weight: bold;
 }
+#logout {
+    display: none;
+    position: absolute;
+    width: 60px;
+    margin-top: 20px;
+    right: 80px;
+}
+#user {
+  position: absolute;
+  display:none;
+  font:normal 15px/20px 'Helvetica Neue', sans-serif;
+  text-align:center;
+  margin-top: 25px;
+  right: 150px;
+  color: white;
+}
 
 /*Mapbox geocoder control style override to fix issue with nav control*/
 .mapboxgl-ctrl-geocoder {
