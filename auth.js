@@ -14,6 +14,7 @@ function done(err, res) {
     var displayName =  u.getAttribute('display_name');
     document.getElementById('user').innerHTML = displayName;
     document.getElementById('user').style.display = 'block';
+    $("#currentReviewer").html(displayName);
 }
 
 function showDetails() {
