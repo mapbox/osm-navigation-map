@@ -506,7 +506,7 @@ function init() {
                 var formReviewer;
                 var popupHTML;
                 if (auth.authenticated()) {
-                    formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><input type='text' name='reviewer'></input></fieldset>";
+                    formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label><label>User: <span id='currentReviewer' style='padding:5px;background-color:#eee'></span></label></fieldset>";
                     popupHTML = "<h3>" + restriction + " <a class='short button' target='_blank' href='https://www.openstreetmap.org/edit?editor=id#map=20/" + e.lngLat.lat + "/" + e.lngLat.lng + "'>Edit Map</a></h3><form>" + formOptions + formReviewer + "<a id='saveReview' class='button col4' href='#'>Save</a><a id='deleteReview' class='button quiet fr col4' href='#' style=''>Delete</a></form>";
                 } else {
                     formReviewer = "<fieldset><label>Reviewed by: <span id='reviewer' style='padding:5px;background-color:#eee'></span></label></fieldset>";
@@ -532,7 +532,7 @@ function init() {
 
                 if (auth.authenticated()) {
                     var userName = document.getElementById('user').innerHTML;
-                    $("input[name=reviewer]").val(userName);
+                    $("#currentReviewer").html(userName);
 
                     // Update dataset with feature status on clicking save
                     document.getElementById("saveReview").onclick = function() {
@@ -565,6 +565,10 @@ function init() {
                     document.getElementById("authenticate").onclick = function() {
                         auth.authenticate(function() {
                             auth.update();
+                            if (auth.authenticated) {
+                                popup.remove();
+                                reviewFeature(feature);
+                            }
                         });
                     };
                 }
