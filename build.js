@@ -395,31 +395,48 @@ function init() {
 
     var mapillaryImages = {
         'id': 'mapillaryImages',
-        'type': 'circle',
+        'type': 'symbol',
         'source': 'mapillaryCoverage',
         'source-layer': 'mapillary-images',
         'layout': {
-            'visibility': 'visible'
-        },
-        'paint': {
-            'circle-radius': 5,
-            'circle-color': 'red'
+            'visibility': 'visible',
+            'icon-image': 'Pointer-1'
         },
         'filter': ['==', 'key', '']
     };
 
     var mapillaryImagesHighlight = {
         'id': 'mapillaryImagesHighlight',
-        'type': 'circle',
+        'type': 'symbol',
         'source': 'mapillaryCoverage',
         'source-layer': 'mapillary-images',
         'layout': {
-            'visibility': 'visible'
+            'visibility': 'visible',
+            'icon-image': 'Pointer-1-focus'
         },
-        'paint': {
-            'circle-radius': 10,
-            'circle-opacity': 0.3,
-            'circle-color': 'white'
+        'filter': ['==', 'key', '']
+    };
+
+    var mapillarySequence = {
+        'id': 'mapillarySequence',
+        'type': 'symbol',
+        'source': 'mapillaryCoverage',
+        'source-layer': 'mapillary-images',
+        'layout': {
+            'visibility': 'visible',
+            'icon-image': 'Pointer-2'
+        },
+        'filter': ['==', 'skey', '']
+    };
+
+    var mapillarySequenceHighlight = {
+        'id': 'mapillarySequenceHighlight',
+        'type': 'symbol',
+        'source': 'mapillaryCoverage',
+        'source-layer': 'mapillary-images',
+        'layout': {
+            'visibility': 'visible',
+            'icon-image': 'Pointer-2-focus'
         },
         'filter': ['==', 'key', '']
     };
@@ -435,6 +452,8 @@ function init() {
 
     map.addLayer(mapillaryImages);
     map.addLayer(mapillaryImagesHighlight);
+    map.addLayer(mapillarySequence, 'mapillaryImages');
+    map.addLayer(mapillarySequenceHighlight);
 
     document.getElementById('logout').onclick = function() {
         auth.logout();
