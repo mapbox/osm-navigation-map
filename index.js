@@ -287,7 +287,7 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "circle-radius": 10,
+            "circle-radius": 15,
             "circle-opacity": 0.3,
             "circle-color": "white"
         },
