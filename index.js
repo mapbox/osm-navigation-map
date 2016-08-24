@@ -7,12 +7,13 @@ var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
+var MAPILLARY_CLIENT_ID = "MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3";
+
 var osmAuth = require('osm-auth');
 var auth = require('./auth');
 auth.update();
 
-var reviewer;
-var mapillaryId;
+var reviewer, mapillaryId, mapillaryImageKey;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
 
@@ -22,7 +23,8 @@ var map = new mapboxgl.Map({
     center: [-105.2, 44.6],
     zoom: 3.5,
     hash: true,
-    attributionControl: false
+    attributionControl: false,
+    keyboard: false
 });
 
 map.addControl(new mapboxgl.Navigation({
@@ -31,6 +33,13 @@ map.addControl(new mapboxgl.Navigation({
 map.addControl(new mapboxgl.Geocoder({
     container: 'geocoder-container'
 }));
+
+var mly = new Mapillary.Viewer('mly', MAPILLARY_CLIENT_ID, null, {
+    attribution: false,
+    direction: false,
+    mouse: false
+});
+$('#mly').hide();
 
 // Layer for review markers
 var reviewedRestrictionsSource = new mapboxgl.GeoJSONSource({
@@ -156,11 +165,10 @@ map.on('style.load', function(e) {
 
 function init() {
     // do all initialisation stuff here
-    var mapillaryClientId = "MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3";
     var mapillaryTrafficSigns = {
         "type": "vector",
         "tiles": [
-            "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + mapillaryClientId,
+            "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + MAPILLARY_CLIENT_ID,
         ],
         "minzoon": 14,
         "maxzoom": 14
@@ -350,31 +358,48 @@ function init() {
 
     var mapillaryImages = {
         'id': 'mapillaryImages',
-        'type': 'circle',
+        'type': 'symbol',
         'source': 'mapillaryCoverage',
         'source-layer': 'mapillary-images',
         'layout': {
-            'visibility': 'visible'
-        },
-        'paint': {
-            'circle-radius': 5,
-            'circle-color': 'red'
+            'visibility': 'visible',
+            'icon-image': 'Pointer-1'
         },
         'filter': ['==', 'key', '']
     };
 
     var mapillaryImagesHighlight = {
         'id': 'mapillaryImagesHighlight',
-        'type': 'circle',
+        'type': 'symbol',
         'source': 'mapillaryCoverage',
         'source-layer': 'mapillary-images',
         'layout': {
-            'visibility': 'visible'
+            'visibility': 'visible',
+            'icon-image': 'Pointer-1-focus'
         },
-        'paint': {
-            'circle-radius': 10,
-            'circle-opacity': 0.3,
-            'circle-color': 'white'
+        'filter': ['==', 'key', '']
+    };
+
+    var mapillarySequence = {
+        'id': 'mapillarySequence',
+        'type': 'symbol',
+        'source': 'mapillaryCoverage',
+        'source-layer': 'mapillary-images',
+        'layout': {
+            'visibility': 'visible',
+            'icon-image': 'Pointer-2'
+        },
+        'filter': ['==', 'skey', '']
+    };
+
+    var mapillarySequenceHighlight = {
+        'id': 'mapillarySequenceHighlight',
+        'type': 'symbol',
+        'source': 'mapillaryCoverage',
+        'source-layer': 'mapillary-images',
+        'layout': {
+            'visibility': 'visible',
+            'icon-image': 'Pointer-2-focus'
         },
         'filter': ['==', 'key', '']
     };
@@ -390,6 +415,8 @@ function init() {
 
     map.addLayer(mapillaryImages);
     map.addLayer(mapillaryImagesHighlight);
+    map.addLayer(mapillarySequence, 'mapillaryImages');
+    map.addLayer(mapillarySequenceHighlight, 'mapillaryImagesHighlight');
 
     document.getElementById('logout').onclick = function() {
         auth.logout();
@@ -416,9 +443,10 @@ function init() {
             map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', rects]);
             map.setFilter('mapillaryImages', ['in', 'key'].concat(imageKeys));
             map.setFilter('mapillaryImagesHighlight', ['==', 'key', '']);
+            map.setFilter('mapillarySequence', ['==', 'skey', '']);
+            map.setFilter('mapillarySequenceHighlight', ['==', 'key', '']);
 
-            $('#mapillary-image').hide();
-            $('#mapillary-image').attr('src', '');
+            $('#mly').hide();
 
             openInJOSM();
         }
@@ -433,13 +461,15 @@ function init() {
         if (mapillaryImages.length) {
             var image = mapillaryImages[0];
             var imageKey = image.properties.key;
+            var sequenceKey = image.properties.skey;
+            
             mapillaryId = imageKey;
-            var imageUrl = 'https://d1cuyjsrcm0gby.cloudfront.net/' + imageKey + '/thumb-640.jpg';
+            mapillaryImageKey = imageKey;
 
             map.setFilter('mapillaryImagesHighlight', ['==', 'key', image.properties.key]);
 
-            $('#mapillary-image').show();
-            $('#mapillary-image').attr('src', imageUrl);
+            $('#mly').show();
+            mly.moveToKey(imageKey);
         }
 
         // Show popup of OSM feature
@@ -603,8 +633,15 @@ function init() {
         $('#traffic-signals-count').text(trafficsignalsCount);
         $('#maxspeed-count').text(speedCount);
     });
-}
 
+
+    mly.on('nodechanged', function(node) {
+        map.setFilter('mapillarySequence', ['==', 'skey', node.sequence.key]);
+        map.setFilter('mapillarySequenceHighlight', ['==', 'key', node.key]);
+
+        mapillaryImageKey = node.key;
+    });
+}
 
 
 function toggleMapillary() {
@@ -615,9 +652,9 @@ function toggleMapillary() {
         var nextState = currentState === 'none' ? 'visible' : 'none';
         map.setLayoutProperty(id, 'visibility', nextState);
     });
-    if (!$("#mapillary-image").hasClass('hidden')) {
-        $("#mapillary-image").addClass('hidden');
-    }
+    // if (!$("#mapillary-image").hasClass('hidden')) {
+    //     $("#mapillary-image").addClass('hidden');
+    // }
 }
 
 // Get data from a Mapbox dataset
@@ -748,9 +785,11 @@ function openInJOSM() {
 }
 
 // Open fullsize Mapillary image in new tab onclicking thumbnail
-$('#mapillary-image').click(function() {
-    var url = $('#mapillary-image').attr('src').replace('640', '2048');
-    window.open(url, '_blank');
+$('#mly').click(function(e) {
+    if (e.target.className == 'domRenderer') {
+        var url = 'https://d1cuyjsrcm0gby.cloudfront.net/' + mapillaryImageKey + '/thumb-2048.jpg'
+        window.open(url, '_blank')
+    }
 });
 
 function countProperty(geojson, property) {
