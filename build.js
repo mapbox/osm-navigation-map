@@ -281,7 +281,7 @@ function init() {
             "visibility": "none"
         },
         "paint": {
-            "line-color": '#2e870a',
+            "line-color": 'white',
             "line-width": {
                 "stops": [
                     [8, 1],
@@ -291,7 +291,7 @@ function init() {
             "line-opacity": {
                 "stops": [
                     [8, 0.2],
-                    [17, 1]
+                    [17, 0.7]
                 ]
             }
         }
