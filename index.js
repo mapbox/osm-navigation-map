@@ -423,6 +423,25 @@ function init() {
         auth.update();
     };
 
+    updateRestrictionValidator();
+    map.on('moveend', function () {
+        updateRestrictionValidator();
+    });
+
+    function updateRestrictionValidator() {
+        var zoom = Math.round(map.getZoom());
+        var lat = map.getCenter().lat;
+        var lng = map.getCenter().lng;
+        if (zoom > 14) {
+            document.getElementById('restrictionValidator').style.display = 'block';
+            document.getElementById('restrictionValidator').onclick = function () {
+                window.open('http://restrictions.morbz.de/#' + zoom + '/' + lat + '/' + lng);
+            };
+        }   else {
+            document.getElementById('restrictionValidator').style.display = 'none';
+        }
+    }
+
     map.on('click', function(e) {
 
         var mapillaryRestrictions = map.queryRenderedFeatures([
