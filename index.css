@@ -91,7 +91,13 @@
   right: 150px;
   color: white;
 }
-
+#restrictionValidator {
+    display:none;
+    position: absolute;
+    width: 140px;
+    bottom: 110px;
+    right: 10px;  
+}
 /*Mapbox geocoder control style override to fix issue with nav control*/
 .mapboxgl-ctrl-geocoder {
   width: 100%;
