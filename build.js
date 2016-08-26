@@ -517,6 +517,24 @@ function init() {
             mly.moveToKey(imageKey);
         }
 
+        var mapillarySequence = map.queryRenderedFeatures([
+            [e.point.x - 5, e.point.y - 5],
+            [e.point.x + 5, e.point.y + 5]
+        ], {
+            layers: ['mapillarySequence']
+        });
+
+        if (mapillarySequence.length) {
+            var image = mapillarySequence[0];
+            var imageKey = image.properties.key;
+
+            mapillaryImageKey = imageKey;
+
+            map.setFilter('mapillarySequenceHighlight', ['==', 'key', image.properties.key]);
+
+            mly.moveToKey(imageKey);
+        }
+
         // Show popup of OSM feature
         var osmFeature = map.queryRenderedFeatures(e.point, {
             layers: ['noturn']
