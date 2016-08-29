@@ -72,7 +72,8 @@ var reviewedRestrictions = {
             'stops': [
                 ['valid', '#02b3eb'],
                 ['redundant', 'yellow'],
-                ['invalid', 'red']
+                ['invalid', 'red'],
+                ['note', 'purple']
             ]
         }
     }
@@ -569,7 +570,7 @@ function init() {
             }
 
             function reviewFeature(feature) {
-                var formOptions = "<div class='radio-pill pill pad2y clearfix' style='width:350px'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col4 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col4 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col4 button icon short check fill-red'>Invalid</label></div>";
+                var formOptions = "<div class='radio-pill pill pad2y clearfix' style='width:350px'><input id='valid' type='radio' name='review' value='valid' checked='checked'><label for='valid' class='col3 button short icon check fill-green'>Valid</label><input id='redundant' type='radio' name='review' value='redundant'><label for='redundant' class='col3 button short icon check fill-mustard'>Redundant</label><input id='invalid' type='radio' name='review' value='invalid'><label for='invalid' class='col3 button icon short check fill-red'>Invalid</label><input id='note' type='radio' name='review' value='note'><label for='note' class='col3 button icon short check fill-purple'>Note</label></div>";
                 var formReviewer;
                 var popupHTML;
                 if (auth.authenticated()) {
