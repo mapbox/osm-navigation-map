@@ -218,7 +218,7 @@ function init() {
         "tiles": [
             "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + MAPILLARY_CLIENT_ID,
         ],
-        "minzoon": 14,
+        "minzoom": 14,
         "maxzoom": 14
     };
 
