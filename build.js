@@ -921,11 +921,37 @@ function getTurnRestrictions(callback) {
 
   queryOverpass(query, function(error, data) {
     if (error) callback(error);
+    data.features.forEach(function(feature) {
+        var props = feature.properties;
+        var keys = Object.keys(props);
+        keys.forEach(function(key) {
+            if (props[key] instanceof Array) {
+                props[key].forEach(function(prop) {
+                    flatten(prop, key, props);
+                });
+            }
+
+            if (props[key] instanceof Object) {
+                flatten(props[key], key, props);
+            }
+        });
+    });
     callback(null, data);
   }, {
     overpassUrl: 'https://overpass-cfn-production.tilestream.net/api/interpreter',
     flatProperties: false
   })
+}
+
+function flatten(obj, parentKey, properties) {
+    Object.keys(obj).forEach(function(key) {
+        if (obj[key] instanceof Object) {
+            flatten(obj[key], parentKey + '_' + key, properties);
+            delete properties[parentKey];
+        }
+        properties[parentKey + '_' + key] = obj[key];
+        delete properties[parentKey];
+    });
 }
 },{"./auth":1,"mapbox-data-team":257,"mapbox/lib/services/datasets":263,"osm-auth":294,"query-overpass":299}],3:[function(require,module,exports){
 
