@@ -13,6 +13,8 @@ var osmAuth = require('osm-auth');
 var auth = require('./auth');
 auth.update();
 
+var queryOverpass = require('query-overpass');
+
 var reviewer, mapillaryId, mapillaryImageKey;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
@@ -183,9 +185,18 @@ function init() {
         "maxzoom": 14
     };
 
+    var osmTurnRestrictions = {
+        "type": "geojson",
+        "data": {
+            "type": "FeatureCollection",
+            "features": []
+        }
+    };
+
     map.addSource("mapillary", mapillaryTrafficSigns);
     map.addSource("mapillaryCoverage", mapillaryCoverage);
-    map.addSource('reviewedRestrictionsSource', reviewedRestrictionsSource);
+    map.addSource("reviewedRestrictionsSource", reviewedRestrictionsSource);
+    map.addSource("osmTurnRestrictions", osmTurnRestrictions)
     map.addLayer(reviewedRestrictions);
 
     // Fetch data every 10 minutes
@@ -405,8 +416,505 @@ function init() {
         'filter': ['==', 'key', '']
     };
 
+    var osmNoStraightFrom = {
+        'id': 'no-straight-from',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "==",
+                "relations_role",
+                "from"
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "butt",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "#26dd26",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 2,
+            "line-gap-width": 2
+        }
+    };
+
+    var osmNoStraightTo = {
+        'id': 'no-straight-to',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "to"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "no_left_turn",
+                    "no_right_turn",
+                    "no_straight_on",
+                    "no_u_turn"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "hsl(8, 90%, 32%)",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 3,
+            "line-dasharray": {
+                "base": 1,
+                "stops": [
+                    [
+                        15,
+                        [
+                            1,
+                            2
+                        ]
+                    ],
+                    [
+                        18,
+                        [
+                            4,
+                            4
+                        ]
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmOnlyTo = {
+        'id': 'only-to',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "to"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "only_left_turn",
+                    "only_right_turn",
+                    "only_straight_on"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "#039",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 3,
+            "line-dasharray": {
+                "base": 1,
+                "stops": [
+                    [
+                        15,
+                        [
+                            3,
+                            1
+                        ]
+                    ],
+                    [
+                        18,
+                        [
+                            6,
+                            2
+                        ]
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmToConditional = {
+        'id': 'to-conditional',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "all",
+                [
+                    "!has",
+                    "relations_reltags_restriction"
+                ],
+                [
+                    "==",
+                    "relations_role",
+                    "to"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "hsl(8, 90%, 32%)",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 3,
+            "line-dasharray": {
+                "base": 1,
+                "stops": [
+                    [
+                        15,
+                        [
+                            1,
+                            2
+                        ]
+                    ],
+                    [
+                        18,
+                        [
+                            4,
+                            4
+                        ]
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmNoUVia = {
+        'id': 'no-u-via',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "==",
+                "relations_role",
+                "via"
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "hsl(29, 100%, 50%)",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-dasharray": [
+                1,
+                2
+            ],
+            "line-width": 3
+        }
+    };
+
+    var osmNoStraightViaNodes = {
+        'id': 'no-straight-via-nodes',
+        'type': 'circle',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "Point"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "via"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "no_left_turn",
+                    "no_right_turn",
+                    "no_straight_on",
+                    "no_u_turn"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible"
+        },
+        "paint": {
+            "circle-color": "#EF0606",
+            "circle-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        12,
+                        0.4
+                    ],
+                    [
+                        14,
+                        0.6
+                    ]
+                ]
+            },
+            "circle-radius": {
+                "base": 1,
+                "stops": [
+                    [
+                        10,
+                        3
+                    ],
+                    [
+                        13.9,
+                        5
+                    ],
+                    [
+                        14,
+                        4
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmOnlyViaNodes = {
+        'id': 'only-via-nodes',
+        'type': 'circle',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "Point"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "via"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "only_left_turn",
+                    "only_right_turn",
+                    "only_straight_on"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible"
+        },
+        "paint": {
+            "circle-color": "#039",
+            "circle-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        12,
+                        0.4
+                    ],
+                    [
+                        14,
+                        0.6
+                    ]
+                ]
+            },
+            "circle-radius": {
+                "base": 1,
+                "stops": [
+                    [
+                        10,
+                        3
+                    ],
+                    [
+                        13.9,
+                        5
+                    ],
+                    [
+                        14,
+                        4
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmViaNodesConditional = {
+        'id': 'via-nodes-conditional',
+        'type': 'circle',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "Point"
+            ],
+            [
+                "all",
+                [
+                    "!has",
+                    "relations_reltags_restriction"
+                ],
+                [
+                    "==",
+                    "relations_role",
+                    "via"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible"
+        },
+        "paint": {
+            "circle-color": "#EF0606",
+            "circle-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        12,
+                        0.4
+                    ],
+                    [
+                        14,
+                        0.6
+                    ]
+                ]
+            },
+            "circle-radius": {
+                "base": 1,
+                "stops": [
+                    [
+                        10,
+                        3
+                    ],
+                    [
+                        13.9,
+                        5
+                    ],
+                    [
+                        14,
+                        4
+                    ]
+                ]
+            }
+        }
+    };
+
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
+
+    map.addLayer(osmNoStraightFrom);
+    map.addLayer(osmNoStraightTo);
+    map.addLayer(osmOnlyTo);
+    map.addLayer(osmToConditional);
+    map.addLayer(osmNoUVia);
+    map.addLayer(osmNoStraightViaNodes);
+    map.addLayer(osmOnlyViaNodes);
+    map.addLayer(osmViaNodesConditional);
 
     map.addLayer(mapillaryTrafficHighlight);
     map.addLayer(mapillaryTrafficLabel);
@@ -679,6 +1187,24 @@ function init() {
 
         mapillaryImageKey = node.key;
     });
+
+    map.on('dragend', function(event) {
+      if (map.getZoom() > 14) {
+        getTurnRestrictions(function(error, data) {
+          if (error) return console.error(error);
+          map.getSource('osmTurnRestrictions').setData(data);
+        });    
+      }
+    });
+
+    map.on('zoomend', function(event) {
+      if (map.getZoom() > 14) {
+        getTurnRestrictions(function(error, data) {
+          if (error) return console.error(error);
+          map.getSource('osmTurnRestrictions').setData(data);
+        })
+      }
+    });
 }
 
 
@@ -838,4 +1364,49 @@ function countProperty(geojson, property) {
     });
     stats['total'] = geojson.features.length;
     return stats;
+}
+
+function getTurnRestrictions(callback) {
+  var bounds = map.getBounds();
+
+  var south  = bounds.getSouth(),
+      west   = bounds.getWest(),
+      north  = bounds.getNorth(),
+      east   = bounds.getEast();
+
+  var query = '[out:json][timeout:600];(relation[~"^restriction.*$"~"."](' + south + ',' + west + ',' + north + ',' + east + '););out body;>;out skel qt;'
+
+  queryOverpass(query, function(error, data) {
+    if (error) callback(error);
+    data.features.forEach(function(feature) {
+        var props = feature.properties;
+        var keys = Object.keys(props);
+        keys.forEach(function(key) {
+            if (props[key] instanceof Array) {
+                props[key].forEach(function(prop) {
+                    flatten(prop, key, props);
+                });
+            }
+
+            if (props[key] instanceof Object) {
+                flatten(props[key], key, props);
+            }
+        });
+    });
+    callback(null, data);
+  }, {
+    overpassUrl: 'https://overpass-cfn-production.tilestream.net/api/interpreter',
+    flatProperties: false
+  })
+}
+
+function flatten(obj, parentKey, properties) {
+    Object.keys(obj).forEach(function(key) {
+        if (obj[key] instanceof Object) {
+            flatten(obj[key], parentKey + '_' + key, properties);
+            delete properties[parentKey];
+        }
+        properties[parentKey + '_' + key] = obj[key];
+        delete properties[parentKey];
+    });
 }
