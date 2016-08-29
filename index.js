@@ -13,6 +13,8 @@ var osmAuth = require('osm-auth');
 var auth = require('./auth');
 auth.update();
 
+var queryOverpass = require('query-overpass');
+
 var reviewer, mapillaryId, mapillaryImageKey;
 
 mapboxgl.accessToken = 'pk.eyJ1IjoicGxhbmVtYWQiLCJhIjoiemdYSVVLRSJ9.g3lbg_eN0kztmsfIPxa9MQ';
@@ -182,13 +184,36 @@ function init() {
         "maxzoom": 14
     };
 
+    var osmTurnRestrictions = {
+        "type": "geojson",
+        "data": {
+            "type": "FeatureCollection",
+            "features": []
+        }
+    };
+
     map.addSource("mapillary", mapillaryTrafficSigns);
     map.addSource("mapillaryCoverage", mapillaryCoverage);
-    map.addSource('reviewedRestrictionsSource', reviewedRestrictionsSource);
+    map.addSource("reviewedRestrictionsSource", reviewedRestrictionsSource);
+    map.addSource("osmTurnRestrictions", osmTurnRestrictions)
     map.addLayer(reviewedRestrictions);
 
     // Fetch data every 10 minutes
     refreshData(10);
+
+    var osmTurnRestrictionsLines = {
+        "id": "osmTurnRestrictionsLines",
+        "type": "line",
+        "source": "osmTurnRestrictions",
+        "layout": {
+            "visibility": "visible",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "red",
+            "line-width": 3
+        }
+    };
 
     var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de", "mandatory--proceed-straight-or-turn-left--de", "mandatory--turn-right--de", "mandatory--proceed-straight-or-turn-right--de", "mandatory--proceed-straight--de", "mandatory--turn-left-ahead--de", "mandatory--turn-right-ahead--de"]
 
@@ -406,6 +431,7 @@ function init() {
 
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
+    map.addLayer(osmTurnRestrictionsLines);
 
     map.addLayer(mapillaryTrafficHighlight);
     map.addLayer(mapillaryTrafficLabel);
@@ -659,6 +685,24 @@ function init() {
 
         mapillaryImageKey = node.key;
     });
+
+    map.on('dragend', function(event) {
+      if (map.getZoom() > 14) {
+        getTurnRestrictions(function(error, data) {
+          if (error) return console.error(error);
+          map.getSource('osmTurnRestrictions').setData(data);
+        });    
+      }
+    });
+
+    map.on('zoomend', function(event) {
+      if (map.getZoom() > 14) {
+        getTurnRestrictions(function(error, data) {
+          if (error) return console.error(error);
+          map.getSource('osmTurnRestrictions').setData(data);
+        })
+      }
+    });
 }
 
 
@@ -818,4 +862,23 @@ function countProperty(geojson, property) {
     });
     stats['total'] = geojson.features.length;
     return stats;
+}
+
+function getTurnRestrictions(callback) {
+  var bounds = map.getBounds();
+
+  var south  = bounds.getSouth(),
+      west   = bounds.getWest(),
+      north  = bounds.getNorth(),
+      east   = bounds.getEast();
+
+  var query = '[out:json][timeout:600];(relation[~"^restriction.*$"~"."](' + south + ',' + west + ',' + north + ',' + east + '););out body;>;out skel qt;'
+
+  queryOverpass(query, function(error, data) {
+    if (error) callback(error);
+    callback(null, data);
+  }, {
+    overpassUrl: 'https://overpass-cfn-production.tilestream.net/api/interpreter',
+    flatProperties: false
+  })
 }
