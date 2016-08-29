@@ -201,20 +201,6 @@ function init() {
     // Fetch data every 10 minutes
     refreshData(10);
 
-    var osmTurnRestrictionsLines = {
-        "id": "osmTurnRestrictionsLines",
-        "type": "line",
-        "source": "osmTurnRestrictions",
-        "layout": {
-            "visibility": "visible",
-            "line-join": "round"
-        },
-        "paint": {
-            "line-color": "red",
-            "line-width": 3
-        }
-    };
-
     var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de", "mandatory--proceed-straight-or-turn-left--de", "mandatory--turn-right--de", "mandatory--proceed-straight-or-turn-right--de", "mandatory--proceed-straight--de", "mandatory--turn-left-ahead--de", "mandatory--turn-right-ahead--de"]
 
     var mapillaryTraffic = {
@@ -429,9 +415,505 @@ function init() {
         'filter': ['==', 'key', '']
     };
 
+    var osmNoStraightFrom = {
+        'id': 'no-straight-from',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "==",
+                "relations_role",
+                "from"
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "butt",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "#26dd26",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 2,
+            "line-gap-width": 2
+        }
+    };
+
+    var osmNoStraightTo = {
+        'id': 'no-straight-to',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "to"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "no_left_turn",
+                    "no_right_turn",
+                    "no_straight_on",
+                    "no_u_turn"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "hsl(8, 90%, 32%)",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 3,
+            "line-dasharray": {
+                "base": 1,
+                "stops": [
+                    [
+                        15,
+                        [
+                            1,
+                            2
+                        ]
+                    ],
+                    [
+                        18,
+                        [
+                            4,
+                            4
+                        ]
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmOnlyTo = {
+        'id': 'only-to',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "to"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "only_left_turn",
+                    "only_right_turn",
+                    "only_straight_on"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "#039",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 3,
+            "line-dasharray": {
+                "base": 1,
+                "stops": [
+                    [
+                        15,
+                        [
+                            3,
+                            1
+                        ]
+                    ],
+                    [
+                        18,
+                        [
+                            6,
+                            2
+                        ]
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmToConditional = {
+        'id': 'to-conditional',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "all",
+                [
+                    "!has",
+                    "relations_reltags_restriction"
+                ],
+                [
+                    "==",
+                    "relations_role",
+                    "to"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "hsl(8, 90%, 32%)",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-width": 3,
+            "line-dasharray": {
+                "base": 1,
+                "stops": [
+                    [
+                        15,
+                        [
+                            1,
+                            2
+                        ]
+                    ],
+                    [
+                        18,
+                        [
+                            4,
+                            4
+                        ]
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmNoUVia = {
+        'id': 'no-u-via',
+        'type': 'line',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "LineString"
+            ],
+            [
+                "==",
+                "relations_role",
+                "via"
+            ]
+        ],
+        "layout": {
+            "visibility": "visible",
+            "line-cap": "round",
+            "line-join": "round"
+        },
+        "paint": {
+            "line-color": "hsl(29, 100%, 50%)",
+            "line-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        14.9,
+                        0
+                    ],
+                    [
+                        15.1,
+                        0.5
+                    ]
+                ]
+            },
+            "line-dasharray": [
+                1,
+                2
+            ],
+            "line-width": 3
+        }
+    };
+
+    var osmNoStraightViaNodes = {
+        'id': 'no-straight-via-nodes',
+        'type': 'circle',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "Point"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "via"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "no_left_turn",
+                    "no_right_turn",
+                    "no_straight_on",
+                    "no_u_turn"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible"
+        },
+        "paint": {
+            "circle-color": "#EF0606",
+            "circle-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        12,
+                        0.4
+                    ],
+                    [
+                        14,
+                        0.6
+                    ]
+                ]
+            },
+            "circle-radius": {
+                "base": 1,
+                "stops": [
+                    [
+                        10,
+                        3
+                    ],
+                    [
+                        13.9,
+                        5
+                    ],
+                    [
+                        14,
+                        4
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmOnlyViaNodes = {
+        'id': 'only-via-nodes',
+        'type': 'circle',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "Point"
+            ],
+            [
+                "all",
+                [
+                    "==",
+                    "relations_role",
+                    "via"
+                ],
+                [
+                    "in",
+                    "relations_reltags_restriction",
+                    "only_left_turn",
+                    "only_right_turn",
+                    "only_straight_on"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible"
+        },
+        "paint": {
+            "circle-color": "#039",
+            "circle-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        12,
+                        0.4
+                    ],
+                    [
+                        14,
+                        0.6
+                    ]
+                ]
+            },
+            "circle-radius": {
+                "base": 1,
+                "stops": [
+                    [
+                        10,
+                        3
+                    ],
+                    [
+                        13.9,
+                        5
+                    ],
+                    [
+                        14,
+                        4
+                    ]
+                ]
+            }
+        }
+    };
+
+    var osmViaNodesConditional = {
+        'id': 'via-nodes-conditional',
+        'type': 'circle',
+        'source': 'osmTurnRestrictions',
+        "filter": [
+            "all",
+            [
+                "==",
+                "$type",
+                "Point"
+            ],
+            [
+                "all",
+                [
+                    "!has",
+                    "relations_reltags_restriction"
+                ],
+                [
+                    "==",
+                    "relations_role",
+                    "via"
+                ]
+            ]
+        ],
+        "layout": {
+            "visibility": "visible"
+        },
+        "paint": {
+            "circle-color": "#EF0606",
+            "circle-opacity": {
+                "base": 1,
+                "stops": [
+                    [
+                        12,
+                        0.4
+                    ],
+                    [
+                        14,
+                        0.6
+                    ]
+                ]
+            },
+            "circle-radius": {
+                "base": 1,
+                "stops": [
+                    [
+                        10,
+                        3
+                    ],
+                    [
+                        13.9,
+                        5
+                    ],
+                    [
+                        14,
+                        4
+                    ]
+                ]
+            }
+        }
+    };
+
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
-    map.addLayer(osmTurnRestrictionsLines);
+
+    map.addLayer(osmNoStraightFrom);
+    map.addLayer(osmNoStraightTo);
+    map.addLayer(osmOnlyTo);
+    map.addLayer(osmToConditional);
+    map.addLayer(osmNoUVia);
+    map.addLayer(osmNoStraightViaNodes);
+    map.addLayer(osmOnlyViaNodes);
+    map.addLayer(osmViaNodesConditional);
 
     map.addLayer(mapillaryTrafficHighlight);
     map.addLayer(mapillaryTrafficLabel);
