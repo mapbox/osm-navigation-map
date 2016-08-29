@@ -117,10 +117,10 @@ var reviewedRestrictions = {
             'property': 'status',
             'type': 'categorical',
             'stops': [
-                ['valid', '#02b3eb'],
-                ['redundant', 'yellow'],
-                ['invalid', 'red'],
-                ['note', 'purple']
+                ['valid', '#52a1d8'],
+                ['redundant', '#fbb03b'],
+                ['invalid', '#e55e5e'],
+                ['note', '#8a8acb']
             ]
         }
     }
