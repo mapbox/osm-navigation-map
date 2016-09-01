@@ -11,7 +11,6 @@ var MAPILLARY_CLIENT_ID = "MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3"
 
 var cover = require('tile-cover');
 var turf = require('turf');
-var fs = require('fs');
 
 var osmAuth = require('osm-auth');
 var auth = require('./auth');
@@ -1282,7 +1281,6 @@ function showTileBoundary() {
     map.setLayoutProperty('tileBoundaryLayer', 'visibility', 'visible');
     map.setLayoutProperty('tileBoundaryTextLayer', 'visibility', 'visible');
     var bbox = [map.getBounds()["_sw"]["lng"], map.getBounds()["_sw"]["lat"], map.getBounds()["_ne"]["lng"], map.getBounds()["_ne"]["lat"]];
-    //var bbox = [77.6218, 12.8968, 77.9192, 13.0942];
     var poly = turf.bboxPolygon(bbox);
     var limits = {
         min_zoom: 12,
