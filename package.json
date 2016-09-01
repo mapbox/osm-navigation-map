@@ -23,7 +23,9 @@
     "mapbox": "^1.0.0-beta3",
     "mapbox-data-team": "^1.1.2",
     "osm-auth": "^0.2.9",
-    "query-overpass": "^1.1.0"
+    "query-overpass": "^1.1.0",
+    "tile-cover": "^3.0.1",
+    "turf": "^3.0.14"
   },
   "devDependencies": {
     "browserify": "^13.1.0",

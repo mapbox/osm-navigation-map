@@ -9,6 +9,9 @@ var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
 var MAPILLARY_CLIENT_ID = "***REMOVED***3";
 
+var cover = require('tile-cover');
+var turf = require('turf');
+
 var osmAuth = require('osm-auth');
 var auth = require('./auth');
 auth.update();
@@ -144,6 +147,8 @@ map.on('style.load', function(e) {
         // Mapillary overlay toggle
         if (toggleItem === 'mapillary') {
             toggleMapillary();
+        } else if(toggleItem === 'tileBoundaryLayer') {
+            toggleTileBoundary();
         } else {
             var layers = toggleLayers[toggleItem].layers;
             for (var i in layers) {
@@ -193,10 +198,16 @@ function init() {
         }
     };
 
+    var tileBoundarySource = {
+        "type": "geojson",
+        "data": ""
+    };
+
     map.addSource("mapillary", mapillaryTrafficSigns);
     map.addSource("mapillaryCoverage", mapillaryCoverage);
     map.addSource("reviewedRestrictionsSource", reviewedRestrictionsSource);
-    map.addSource("osmTurnRestrictions", osmTurnRestrictions)
+    map.addSource("osmTurnRestrictions", osmTurnRestrictions);
+    map.addSource("tileBoundarySource", tileBoundarySource);
     map.addLayer(reviewedRestrictions);
 
     // Fetch data every 10 minutes
@@ -906,6 +917,33 @@ function init() {
         }
     };
 
+    var tileBoundaryLayer = {
+        'id': 'tileBoundaryLayer',
+        'type': 'line',
+        'source': 'tileBoundarySource',
+        'layout': {
+            'visibility': 'none',
+        },
+        "paint": {
+            "line-color": 'red',
+        }
+    };
+
+    var tileBoundaryTextLayer = {
+        'id': 'tileBoundaryTextLayer',
+        'type': 'symbol',
+        'source': 'tileBoundarySource',
+        'layout': {
+            'visibility': 'none',
+            "text-field": "{id}",
+            "text-size": 14,
+            "text-offset": [4, 4],
+        },
+        "paint": {
+            "text-color": 'red',
+        }
+    };
+
     map.addLayer(mapillaryCoverageLine, 'noturn');
     map.addLayer(mapillaryCoverageLineDirection);
 
@@ -929,6 +967,9 @@ function init() {
     map.addLayer(mapillarySequence, 'mapillaryImages');
     map.addLayer(mapillarySequenceHighlight, 'mapillaryImagesHighlight');
 
+    map.addLayer(tileBoundaryLayer, 'tileBoundaryLayer');
+    map.addLayer(tileBoundaryTextLayer,'tileBoundaryTextLayer');
+
     document.getElementById('logout').onclick = function() {
         auth.logout();
         auth.update();
@@ -937,6 +978,12 @@ function init() {
     updateRestrictionValidator();
     map.on('moveend', function () {
         updateRestrictionValidator();
+        var tileBoundarybutton = document.getElementById('tileBoundaryLayer');
+        if (map.getZoom() >= 10 && tileBoundarybutton.classList.contains('active')) {
+            showTileBoundary();            
+        } else {
+            hideTileBoundary();
+        }
     });
 
     function updateRestrictionValidator() {
@@ -1221,6 +1268,43 @@ function toggleMapillary() {
     // if (!$("#mapillary-image").hasClass('hidden')) {
     //     $("#mapillary-image").addClass('hidden');
     // }
+}
+
+function toggleTileBoundary() {
+    var tileBoundarybutton = document.getElementById('tileBoundaryLayer');
+    if (tileBoundarybutton.classList.contains('active') && map.getZoom() >= 10) {
+        showTileBoundary();
+    } else {
+        hideTileBoundary();
+    }
+}
+
+function showTileBoundary() {
+    map.setLayoutProperty('tileBoundaryLayer', 'visibility', 'visible');
+    map.setLayoutProperty('tileBoundaryTextLayer', 'visibility', 'visible');
+    var bbox = [map.getBounds()["_sw"]["lng"], map.getBounds()["_sw"]["lat"], map.getBounds()["_ne"]["lng"], map.getBounds()["_ne"]["lat"]];
+    var poly = turf.bboxPolygon(bbox);
+    var limits = {
+        min_zoom: 12,
+        max_zoom: 12
+    };
+
+    var geojson = cover.geojson(poly.geometry, limits);
+    var indexes = [];
+    indexes = cover.tiles(poly.geometry, limits);
+    var arr = geojson.features;
+    var i;
+
+    for(i = 0; i < geojson.features.length; i++) {
+        geojson.features[i]["properties"] = {'id' : indexes[i][0] + ',' + indexes[i][1]};
+    }
+    console.log(geojson);
+    map.getSource('tileBoundarySource').setData(geojson);
+}
+
+function hideTileBoundary() {
+    map.setLayoutProperty('tileBoundaryLayer', 'visibility', 'none');            
+    map.setLayoutProperty('tileBoundaryTextLayer', 'visibility', 'none');                    
 }
 
 // Get data from a Mapbox dataset
