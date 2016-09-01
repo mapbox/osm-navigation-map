@@ -128,7 +128,7 @@ var toggleFilters = {
 map.on('style.load', function(e) {
     init();
 
-    // showOnlyLayers(toggleLayers, 'turn-restrictions');
+    showOnlyLayers(toggleLayers, null);
 
     // Highlight only team edits
     // toggleLayerFilters('turn-restrictions','mapbox-team');
