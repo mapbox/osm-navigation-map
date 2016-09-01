@@ -351,6 +351,21 @@ function init() {
         }
     };
 
+    var mapillaryTrafficRestrictionsIcon = {
+        "id": "mapillaryTrafficRestrictionsIcon",
+        "type": "symbol",
+        "source": "mapillary",
+        "source-layer": "objects",
+        "layout": {
+            "icon-image": "{value}",
+            'icon-image': '{value}',
+            'icon-allow-overlap': true,
+            'icon-size': 0.8,
+            'visibility': 'none'
+        },
+        "filter": mapillaryRestrictionsFilter
+    };
+
     var mapillaryTrafficRestrictionsLabel = {
         "id": "mapillaryTrafficRestrictionsLabel",
         "type": "symbol",
@@ -361,11 +376,8 @@ function init() {
             "text-size": 14,
             "text-offset": [0, 2],
             "text-font": ["Clan Offc Pro Bold"],
-            "icon-image": "{value}",
             "visibility": "none",
-            'icon-image': '{value}',
-            'icon-allow-overlap': true,
-            'icon-size': 0.8
+            'text-allow-overlap': false
         },
         "paint": {
             "text-color": "hsl(112, 100%, 50%)",
@@ -960,6 +972,7 @@ function init() {
     map.addLayer(mapillaryTrafficLabel);
     map.addLayer(mapillaryTrafficRestrictions, 'noturn');
     map.addLayer(mapillaryTraffic, 'noturn');
+    map.addLayer(mapillaryTrafficRestrictionsIcon);
     map.addLayer(mapillaryTrafficRestrictionsLabel);
 
     map.addLayer(mapillaryImages);
@@ -1258,7 +1271,7 @@ function init() {
 
 
 function toggleMapillary() {
-    var mapillaryLayers = ['mapillaryCoverageLine', 'mapillaryCoverageLineDirection', 'mapillaryTrafficHighlight', 'mapillaryTraffic', 'mapillaryTrafficRestrictions', 'mapillaryTrafficLabel', 'mapillaryTrafficRestrictionsLabel'];
+    var mapillaryLayers = ['mapillaryCoverageLine', 'mapillaryCoverageLineDirection', 'mapillaryTrafficHighlight', 'mapillaryTraffic', 'mapillaryTrafficRestrictions', 'mapillaryTrafficLabel', 'mapillaryTrafficRestrictionsIcon', 'mapillaryTrafficRestrictionsLabel'];
 
     mapillaryLayers.forEach(function(id) {
         var currentState = map.getLayoutProperty(id, 'visibility');
