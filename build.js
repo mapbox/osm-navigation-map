@@ -515,7 +515,7 @@ function init() {
             "line-join": "round"
         },
         "paint": {
-            "line-color": "#26dd26",
+            "line-color": "hsl(49, 71%, 58%)",
             "line-opacity": {
                 "base": 1,
                 "stops": [
@@ -529,8 +529,7 @@ function init() {
                     ]
                 ]
             },
-            "line-width": 2,
-            "line-gap-width": 2
+            "line-width": 4
         }
     };
 
@@ -568,7 +567,7 @@ function init() {
             "line-join": "round"
         },
         "paint": {
-            "line-color": "hsl(8, 90%, 32%)",
+            "line-color": "hsl(0, 91%, 55%)",
             "line-opacity": {
                 "base": 1,
                 "stops": [
@@ -578,11 +577,10 @@ function init() {
                     ],
                     [
                         15.1,
-                        0.5
+                        0.7
                     ]
                 ]
             },
-            "line-width": 3,
             "line-dasharray": {
                 "base": 1,
                 "stops": [
@@ -601,7 +599,8 @@ function init() {
                         ]
                     ]
                 ]
-            }
+            },
+            "line-width": 2
         }
     };
 
@@ -638,7 +637,7 @@ function init() {
             "line-join": "round"
         },
         "paint": {
-            "line-color": "#039",
+            "line-color": "hsl(206, 100%, 50%)",
             "line-opacity": {
                 "base": 1,
                 "stops": [
@@ -648,7 +647,7 @@ function init() {
                     ],
                     [
                         15.1,
-                        0.5
+                        0.7
                     ]
                 ]
             },
@@ -705,7 +704,7 @@ function init() {
             "line-join": "round"
         },
         "paint": {
-            "line-color": "hsl(8, 90%, 32%)",
+            "line-color": "hsl(0, 91%, 55%)",
             "line-opacity": {
                 "base": 1,
                 "stops": [
@@ -715,11 +714,10 @@ function init() {
                     ],
                     [
                         15.1,
-                        0.5
+                        0.7
                     ]
                 ]
             },
-            "line-width": 3,
             "line-dasharray": {
                 "base": 1,
                 "stops": [
@@ -738,7 +736,8 @@ function init() {
                         ]
                     ]
                 ]
-            }
+            },
+            "line-width": 2
         }
     };
 
@@ -775,7 +774,7 @@ function init() {
                     ],
                     [
                         15.1,
-                        0.5
+                        0.7
                     ]
                 ]
             },
@@ -819,7 +818,7 @@ function init() {
             "visibility": "visible"
         },
         "paint": {
-            "circle-color": "#EF0606",
+            "circle-color": "hsl(0, 66%, 53%)",
             "circle-opacity": {
                 "base": 1,
                 "stops": [
@@ -838,15 +837,15 @@ function init() {
                 "stops": [
                     [
                         10,
-                        3
+                        4
                     ],
                     [
                         13.9,
-                        5
+                        6
                     ],
                     [
                         14,
-                        4
+                        5
                     ]
                 ]
             }
@@ -884,7 +883,7 @@ function init() {
             "visibility": "visible"
         },
         "paint": {
-            "circle-color": "#039",
+            "circle-color": "hsl(206, 100%, 50%)",
             "circle-opacity": {
                 "base": 1,
                 "stops": [
@@ -903,15 +902,15 @@ function init() {
                 "stops": [
                     [
                         10,
-                        3
+                        4
                     ],
                     [
                         13.9,
-                        5
+                        6
                     ],
                     [
                         14,
-                        4
+                        5
                     ]
                 ]
             }
@@ -946,7 +945,7 @@ function init() {
             "visibility": "visible"
         },
         "paint": {
-            "circle-color": "#EF0606",
+            "circle-color": "hsl(0, 66%, 53%)",
             "circle-opacity": {
                 "base": 1,
                 "stops": [
@@ -965,15 +964,15 @@ function init() {
                 "stops": [
                     [
                         10,
-                        3
+                        4
                     ],
                     [
                         13.9,
-                        5
+                        6
                     ],
                     [
                         14,
-                        4
+                        5
                     ]
                 ]
             }
