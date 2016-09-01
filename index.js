@@ -778,8 +778,8 @@ function init() {
                 "base": 1,
                 "stops": [
                     [
-                        12,
-                        0.4
+                        13.9,
+                        0
                     ],
                     [
                         14,
@@ -843,8 +843,8 @@ function init() {
                 "base": 1,
                 "stops": [
                     [
-                        12,
-                        0.4
+                        13.9,
+                        0
                     ],
                     [
                         14,
@@ -1019,7 +1019,6 @@ function init() {
     }
 
     map.on('click', function(e) {
-
         var mapillaryRestrictions = map.queryRenderedFeatures([
             [e.point.x - 5, e.point.y - 5],
             [e.point.x + 5, e.point.y + 5]
