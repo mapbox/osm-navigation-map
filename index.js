@@ -80,6 +80,12 @@ var reviewedRestrictions = {
                 ['invalid', '#e55e5e'],
                 ['note', '#8a8acb']
             ]
+        },
+        'circle-opacity': {
+            'stops': [
+                [13.9, 1],
+                [14, 0.5]
+            ]
         }
     }
 };
