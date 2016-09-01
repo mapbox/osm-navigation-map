@@ -1294,7 +1294,7 @@ function showTileBoundary() {
     var i;
 
     for(i = 0; i < geojson.features.length; i++) {
-        geojson.features[i]["properties"] = {'id' : indexes[i]};
+        geojson.features[i]["properties"] = {'id' : indexes[i][0] + ',' + indexes[i][1]};
     }
     console.log(geojson);
     map.getSource('tileBoundarySource').setData(geojson);
