@@ -406,7 +406,11 @@ function init() {
         'source-layer': 'mapillary-images',
         'layout': {
             'visibility': 'visible',
-            'icon-image': 'Pointer-1'
+            'icon-image': 'Pointer-1',
+            'icon-rotate': {
+              'property': 'ca',
+              'stops': iconRotations()
+            }
         },
         'filter': ['==', 'key', '']
     };
@@ -418,7 +422,11 @@ function init() {
         'source-layer': 'mapillary-images',
         'layout': {
             'visibility': 'visible',
-            'icon-image': 'Pointer-1-focus'
+            'icon-image': 'Pointer-1-focus',
+            'icon-rotate': {
+              'property': 'ca',
+              'stops': iconRotations()
+            }
         },
         'filter': ['==', 'key', '']
     };
@@ -430,7 +438,11 @@ function init() {
         'source-layer': 'mapillary-images',
         'layout': {
             'visibility': 'visible',
-            'icon-image': 'Pointer-2'
+            'icon-image': 'Pointer-2',
+            'icon-rotate': {
+              'property': 'ca',
+              'stops': iconRotations()
+            }
         },
         'filter': ['==', 'skey', '']
     };
@@ -442,7 +454,11 @@ function init() {
         'source-layer': 'mapillary-images',
         'layout': {
             'visibility': 'visible',
-            'icon-image': 'Pointer-2-focus'
+            'icon-image': 'Pointer-2-focus',
+            'icon-rotate': {
+              'property': 'ca',
+              'stops': iconRotations()
+            }
         },
         'filter': ['==', 'key', '']
     };
@@ -998,7 +1014,7 @@ function init() {
         updateRestrictionValidator();
         var tileBoundarybutton = document.getElementById('tileBoundaryLayer');
         if (map.getZoom() >= 10 && tileBoundarybutton.classList.contains('active')) {
-            showTileBoundary();            
+            showTileBoundary();
         } else {
             hideTileBoundary();
         }
@@ -1056,7 +1072,7 @@ function init() {
             var image = mapillaryImages[0];
             var imageKey = image.properties.key;
             var sequenceKey = image.properties.skey;
-            
+
             mapillaryId = imageKey;
             mapillaryImageKey = imageKey;
 
@@ -1259,7 +1275,7 @@ function init() {
         getTurnRestrictions(function(error, data) {
           if (error) return console.error(error);
           map.getSource('osmTurnRestrictions').setData(data);
-        });    
+        });
       }
     });
 
@@ -1320,8 +1336,8 @@ function showTileBoundary() {
 }
 
 function hideTileBoundary() {
-    map.setLayoutProperty('tileBoundaryLayer', 'visibility', 'none');            
-    map.setLayoutProperty('tileBoundaryTextLayer', 'visibility', 'none');                    
+    map.setLayoutProperty('tileBoundaryLayer', 'visibility', 'none');
+    map.setLayoutProperty('tileBoundaryTextLayer', 'visibility', 'none');
 }
 
 // Get data from a Mapbox dataset
@@ -1512,4 +1528,12 @@ function flatten(obj, parentKey, properties) {
         properties[parentKey + '_' + key] = obj[key];
         delete properties[parentKey];
     });
+}
+
+function iconRotations() {
+  var stops = [];
+  for (var i = -360; i <= 360; i++) {
+    stops.push([i, i]);
+  }
+  return stops;
 }
