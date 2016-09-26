@@ -1,4 +1,4 @@
-var DATASETS_PROXY_URL = 'https://idsk540fo5.execute-api.us-east-1.amazonaws.com/testing/';
+var DATASETS_PROXY_URL = 'https://idsk540fo5.execute-api.us-east-1.amazonaws.com/testing/features';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
@@ -1354,17 +1354,9 @@ function refreshData(refreshRate) {
 
     function getFeatures(startID) {
 
-        var url = DATASETS_BASE_URL + 'features';
-        var params = {
-            'access_token': DATASETS_ACCESS_TOKEN
-        };
+        var url = DATASETS_PROXY_URL + (startID ? '?start=' + startID : '');
 
-        // Begin with the last feature of previous request
-        if (startID) {
-            params.start = startID;
-        }
-
-        $.getJSON(url, params, function(data) {
+        $.getJSON(url, function(data) {
 
             console.log(data);
 
