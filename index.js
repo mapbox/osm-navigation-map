@@ -6,6 +6,7 @@ var MAPILLARY_CLIENT_ID = "***REMOVED***3";
 
 var cover = require('tile-cover');
 var turf = require('turf');
+var hat = require('hat');
 
 var osmAuth = require('osm-auth');
 var auth = require('./auth');
@@ -1195,10 +1196,15 @@ function init() {
                         newfeaturesGeoJSON.properties["reviewed_on"] = Date.now();
                         newfeaturesGeoJSON.properties["mapillary_id"] = mapillaryId;
                         popup.remove();
-                        mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
-                            console.log(response);
-                            featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
-                            reviewedRestrictionsSource.setData(featuresGeoJSON);
+                        newfeaturesGeoJSON["id"] = newfeaturesGeoJSON["id"] || hat();
+                        $.ajax({
+                          url: DATASETS_PROXY_URL + "/" + newfeaturesGeoJSON["id"],
+                          type: "PUT",
+                          contentType: "application/json",
+                          data: JSON.stringify(newfeaturesGeoJSON)
+                        }).done(function(response) {
+                          featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
+                          reviewedRestrictionsSource.setData(featuresGeoJSON);
                         });
                     };
                     // Delete feature on clicking delete
