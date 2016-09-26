@@ -1,9 +1,4 @@
-var DATASETS_ID = 'cir7dfh3b000oijmgxkaoy0tx';
-var DATASETS_BASE_URL = 'https://api.mapbox.com/datasets/v1/theplanemad/' + DATASETS_ID + '/';
-var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
-
-var MapboxClient = require('mapbox/lib/services/datasets');
-var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
+var DATASETS_PROXY_URL = 'https://idsk540fo5.execute-api.us-east-1.amazonaws.com/testing/';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
