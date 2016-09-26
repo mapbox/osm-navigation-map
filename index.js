@@ -1210,9 +1210,10 @@ function init() {
                     // Delete feature on clicking delete
                     document.getElementById("deleteReview").onclick = function() {
                         popup.remove();
-                        mapbox.deleteFeature(newfeaturesGeoJSON["id"], DATASETS_ID, function(err, response) {
-                            console.log(response);
-                        });
+                        $.ajax({
+                          url: DATASETS_PROXY_URL + "/" + newfeaturesGeoJSON["id"],
+                          type: "DELETE"
+                        })
                     };
 
                     document.getElementById('logout').onclick = function() {
