@@ -1,9 +1,4 @@
-var DATASETS_ID = 'cir7dfh3b000oijmgxkaoy0tx';
-var DATASETS_BASE_URL = 'https://api.mapbox.com/datasets/v1/theplanemad/' + DATASETS_ID + '/';
-var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
-
-var MapboxClient = require('mapbox/lib/services/datasets');
-var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
+var DATASETS_PROXY_URL = '***REMOVED***';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
@@ -11,6 +6,7 @@ var MAPILLARY_CLIENT_ID = "***REMOVED***3";
 
 var cover = require('tile-cover');
 var turf = require('turf');
+var hat = require('hat');
 
 var osmAuth = require('osm-auth');
 var auth = require('./auth');
@@ -1200,18 +1196,24 @@ function init() {
                         newfeaturesGeoJSON.properties["reviewed_on"] = Date.now();
                         newfeaturesGeoJSON.properties["mapillary_id"] = mapillaryId;
                         popup.remove();
-                        mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
-                            console.log(response);
-                            featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
-                            reviewedRestrictionsSource.setData(featuresGeoJSON);
+                        newfeaturesGeoJSON["id"] = newfeaturesGeoJSON["id"] || hat();
+                        $.ajax({
+                          url: DATASETS_PROXY_URL + "/" + newfeaturesGeoJSON["id"],
+                          type: "PUT",
+                          contentType: "application/json",
+                          data: JSON.stringify(newfeaturesGeoJSON)
+                        }).done(function(response) {
+                          featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
+                          reviewedRestrictionsSource.setData(featuresGeoJSON);
                         });
                     };
                     // Delete feature on clicking delete
                     document.getElementById("deleteReview").onclick = function() {
                         popup.remove();
-                        mapbox.deleteFeature(newfeaturesGeoJSON["id"], DATASETS_ID, function(err, response) {
-                            console.log(response);
-                        });
+                        $.ajax({
+                          url: DATASETS_PROXY_URL + "/" + newfeaturesGeoJSON["id"],
+                          type: "DELETE"
+                        })
                     };
 
                     document.getElementById('logout').onclick = function() {
@@ -1359,17 +1361,9 @@ function refreshData(refreshRate) {
 
     function getFeatures(startID) {
 
-        var url = DATASETS_BASE_URL + 'features';
-        var params = {
-            'access_token': DATASETS_ACCESS_TOKEN
-        };
+        var url = DATASETS_PROXY_URL + (startID ? '?start=' + startID : '');
 
-        // Begin with the last feature of previous request
-        if (startID) {
-            params.start = startID;
-        }
-
-        $.getJSON(url, params, function(data) {
+        $.getJSON(url, function(data) {
 
             console.log(data);
 

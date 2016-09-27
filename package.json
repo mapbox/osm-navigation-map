@@ -20,6 +20,7 @@
   "author": "Mapbox",
   "license": "ISC",
   "dependencies": {
+    "hat": "0.0.3",
     "mapbox": "^1.0.0-beta3",
     "mapbox-data-team": "^1.1.2",
     "osm-auth": "^0.2.9",
