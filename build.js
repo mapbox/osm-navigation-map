@@ -43,7 +43,7 @@ auth.update = function () {
 module.exports = auth;
 
 },{"osm-auth":259}],2:[function(require,module,exports){
-var DATASETS_PROXY_URL = 'https://idsk540fo5.execute-api.us-east-1.amazonaws.com/testing/features';
+var DATASETS_PROXY_URL = 'https://57cj94alhd.execute-api.us-east-1.amazonaws.com/testing/features';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
