@@ -42,13 +42,8 @@ auth.update = function () {
 
 module.exports = auth;
 
-},{"osm-auth":294}],2:[function(require,module,exports){
-var DATASETS_ID = 'cir7dfh3b000oijmgxkaoy0tx';
-var DATASETS_BASE_URL = 'https://api.mapbox.com/datasets/v1/theplanemad/' + DATASETS_ID + '/';
-var DATASETS_ACCESS_TOKEN = 'sk.eyJ1IjoidGhlcGxhbmVtYWQiLCJhIjoiY2lyN2RobWgyMDAwOGlrbWdkbWp2cWdjNiJ9.AnPKx0Iqk-uzARdoOthoFg';
-
-var MapboxClient = require('mapbox/lib/services/datasets');
-var mapbox = new MapboxClient(DATASETS_ACCESS_TOKEN);
+},{"osm-auth":259}],2:[function(require,module,exports){
+var DATASETS_PROXY_URL = 'https://idsk540fo5.execute-api.us-east-1.amazonaws.com/testing/features';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
@@ -56,6 +51,7 @@ var MAPILLARY_CLIENT_ID = "MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3"
 
 var cover = require('tile-cover');
 var turf = require('turf');
+var hat = require('hat');
 
 var osmAuth = require('osm-auth');
 var auth = require('./auth');
@@ -1245,18 +1241,24 @@ function init() {
                         newfeaturesGeoJSON.properties["reviewed_on"] = Date.now();
                         newfeaturesGeoJSON.properties["mapillary_id"] = mapillaryId;
                         popup.remove();
-                        mapbox.insertFeature(newfeaturesGeoJSON, DATASETS_ID, function(err, response) {
-                            console.log(response);
-                            featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
-                            reviewedRestrictionsSource.setData(featuresGeoJSON);
+                        newfeaturesGeoJSON["id"] = newfeaturesGeoJSON["id"] || hat();
+                        $.ajax({
+                          url: DATASETS_PROXY_URL + "/" + newfeaturesGeoJSON["id"],
+                          type: "PUT",
+                          contentType: "application/json",
+                          data: JSON.stringify(newfeaturesGeoJSON)
+                        }).done(function(response) {
+                          featuresGeoJSON.features = featuresGeoJSON.features.concat(response);
+                          reviewedRestrictionsSource.setData(featuresGeoJSON);
                         });
                     };
                     // Delete feature on clicking delete
                     document.getElementById("deleteReview").onclick = function() {
                         popup.remove();
-                        mapbox.deleteFeature(newfeaturesGeoJSON["id"], DATASETS_ID, function(err, response) {
-                            console.log(response);
-                        });
+                        $.ajax({
+                          url: DATASETS_PROXY_URL + "/" + newfeaturesGeoJSON["id"],
+                          type: "DELETE"
+                        })
                     };
 
                     document.getElementById('logout').onclick = function() {
@@ -1404,17 +1406,9 @@ function refreshData(refreshRate) {
 
     function getFeatures(startID) {
 
-        var url = DATASETS_BASE_URL + 'features';
-        var params = {
-            'access_token': DATASETS_ACCESS_TOKEN
-        };
+        var url = DATASETS_PROXY_URL + (startID ? '?start=' + startID : '');
 
-        // Begin with the last feature of previous request
-        if (startID) {
-            params.start = startID;
-        }
-
-        $.getJSON(url, params, function(data) {
+        $.getJSON(url, function(data) {
 
             console.log(data);
 
@@ -1583,7 +1577,7 @@ function iconRotations() {
   return stops;
 }
 
-},{"./auth":1,"mapbox-data-team":257,"mapbox/lib/services/datasets":263,"osm-auth":294,"query-overpass":299,"tile-cover":440,"turf":442}],3:[function(require,module,exports){
+},{"./auth":1,"hat":256,"mapbox-data-team":258,"osm-auth":259,"query-overpass":264,"tile-cover":405,"turf":407}],3:[function(require,module,exports){
 
 },{}],4:[function(require,module,exports){
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
@@ -32446,6 +32440,70 @@ function extend() {
 }
 
 },{}],256:[function(require,module,exports){
+var hat = module.exports = function (bits, base) {
+    if (!base) base = 16;
+    if (bits === undefined) bits = 128;
+    if (bits <= 0) return '0';
+    
+    var digits = Math.log(Math.pow(2, bits)) / Math.log(base);
+    for (var i = 2; digits === Infinity; i *= 2) {
+        digits = Math.log(Math.pow(2, bits / i)) / Math.log(base) * i;
+    }
+    
+    var rem = digits - Math.floor(digits);
+    
+    var res = '';
+    
+    for (var i = 0; i < Math.floor(digits); i++) {
+        var x = Math.floor(Math.random() * base).toString(base);
+        res = x + res;
+    }
+    
+    if (rem) {
+        var b = Math.pow(base, rem);
+        var x = Math.floor(Math.random() * b).toString(base);
+        res = x + res;
+    }
+    
+    var parsed = parseInt(res, base);
+    if (parsed !== Infinity && parsed >= Math.pow(2, bits)) {
+        return hat(bits, base)
+    }
+    else return res;
+};
+
+hat.rack = function (bits, base, expandBy) {
+    var fn = function (data) {
+        var iters = 0;
+        do {
+            if (iters ++ > 10) {
+                if (expandBy) bits += expandBy;
+                else throw new Error('too many ID collisions, use more bits')
+            }
+            
+            var id = hat(bits, base);
+        } while (Object.hasOwnProperty.call(hats, id));
+        
+        hats[id] = data;
+        return id;
+    };
+    var hats = fn.hats = {};
+    
+    fn.get = function (id) {
+        return fn.hats[id];
+    };
+    
+    fn.set = function (id, value) {
+        fn.hats[id] = value;
+        return fn;
+    };
+    
+    fn.bits = bits || 128;
+    fn.base = base || 16;
+    return fn;
+};
+
+},{}],257:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -32719,7 +32777,7 @@ module.exports = {
     ]
 };
 
-},{}],257:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 'use strict';
 
 var team = require('./data/team.js').team;
@@ -32772,3215 +32830,7 @@ module.exports = {
     'getEverything': getEverything
 };
 
-},{"./data/team.js":256}],258:[function(require,module,exports){
-'use strict';
-
-var interceptor = require('rest/interceptor');
-
-var callbackify = interceptor({
-  success: function (response) {
-    var request = response && response.request;
-    var callback = request && request.callback;
-
-    if (typeof callback === 'function') {
-      callback(null, response.entity);
-    }
-
-    return response;
-  },
-  error: function (response) {
-    var request = response && response.request;
-    var callback = request && request.callback;
-
-    if (typeof callback === 'function') {
-      var err = response.error || response.entity;
-      if (typeof err !== 'object') err = new Error(err);
-      callback(err);
-    }
-
-    return response;
-  }
-});
-
-module.exports = callbackify;
-
-},{"rest/interceptor":269}],259:[function(require,module,exports){
-'use strict';
-
-var rest = require('rest');
-var callbackify = require('./callbackify');
-
-// rest.js client with MIME support
-module.exports = function(config) {
-  return rest
-    .wrap(require('rest/interceptor/errorCode'))
-    .wrap(require('rest/interceptor/pathPrefix'), { prefix: config.endpoint })
-    .wrap(require('rest/interceptor/mime'), { mime: 'application/json' })
-    .wrap(require('rest/interceptor/params'))
-    .wrap(require('rest/interceptor/defaultRequest'), {
-      params: { access_token: config.accessToken }
-    })
-    .wrap(require('rest/interceptor/template'))
-    .wrap(callbackify);
-};
-
-},{"./callbackify":258,"rest":265,"rest/interceptor/defaultRequest":270,"rest/interceptor/errorCode":271,"rest/interceptor/mime":272,"rest/interceptor/params":273,"rest/interceptor/pathPrefix":274,"rest/interceptor/template":275}],260:[function(require,module,exports){
-// We keep all of the constants that declare endpoints in one
-// place, so that we could concievably update this for API layout
-// revisions.
-module.exports.DEFAULT_ENDPOINT = 'https://api.mapbox.com';
-
-module.exports.API_GEOCODING_FORWARD = '/geocoding/v5/{dataset}/{query}.json{?proximity,country,types,bbox}';
-module.exports.API_GEOCODING_REVERSE = '/geocoding/v5/{dataset}/{longitude},{latitude}.json{?types}';
-
-module.exports.API_DIRECTIONS = '/v4/directions/{profile}/{encodedWaypoints}.json{?alternatives,instructions,geometry,steps}';
-module.exports.API_DISTANCE = '/distances/v1/mapbox/{profile}';
-
-module.exports.API_SURFACE = '/v4/surface/{mapid}.json{?layer,fields,points,geojson,interpolate,encoded_polyline}';
-
-module.exports.API_UPLOADS = '/uploads/v1/{owner}';
-module.exports.API_UPLOAD = '/uploads/v1/{owner}/{upload}';
-module.exports.API_UPLOAD_CREDENTIALS = '/uploads/v1/{owner}/credentials';
-
-module.exports.API_MATCHING = '/matching/v4/{profile}.json';
-
-module.exports.API_DATASET_DATASETS = '/datasets/v1/{owner}';
-module.exports.API_DATASET_DATASET = '/datasets/v1/{owner}/{dataset}';
-module.exports.API_DATASET_FEATURES = '/datasets/v1/{owner}/{dataset}/features{?reverse,limit,start}';
-module.exports.API_DATASET_FEATURE = '/datasets/v1/{owner}/{dataset}/features/{id}';
-
-module.exports.API_TILESTATS_STATISTICS = '/tilestats/v1/{owner}/{tileset}';
-module.exports.API_TILESTATS_LAYER = '/tilestats/v1/{owner}/{tileset}/{layer}';
-module.exports.API_TILESTATS_ATTRIBUTE = '/tilestats/v1/{owner}/{tileset}/{layer}/{attribute}';
-
-module.exports.API_STATIC = '/v4/{mapid}{+overlay}/{+xyz}/{width}x{height}{+retina}{.format}{?api_token}';
-
-module.exports.API_STYLES_LIST = '/styles/v1/{owner}';
-module.exports.API_STYLES_CREATE = '/styles/v1/{owner}';
-module.exports.API_STYLES_READ = '/styles/v1/{owner}/{styleid}';
-module.exports.API_STYLES_UPDATE = '/styles/v1/{owner}/{styleid}';
-module.exports.API_STYLES_DELETE = '/styles/v1/{owner}/{styleid}';
-module.exports.API_STYLES_EMBED = '/styles/v1/{owner}/{styleid}.html{?zoomwheel,title,access_token}';
-module.exports.API_STYLES_SPRITE = '/styles/v1/{owner}/{styleid}/sprite{+retina}{.format}';
-module.exports.API_STYLES_SPRITE_ADD_ICON = '/styles/v1/{owner}/{styleid}/sprite/{iconName}';
-module.exports.API_STYLES_SPRITE_DELETE_ICON = '/styles/v1/{owner}/{styleid}/sprite/{iconName}';
-
-module.exports.API_STYLES_FONT_GLYPH_RANGES = '/fonts/v1/{owner}/{font}/{start}-{end}.pbf'
-
-},{}],261:[function(require,module,exports){
-'use strict';
-
-var b64 = require('rest/util/base64');
-
-/**
- * Access tokens actually are data, and using them we can derive
- * a user's username. This method attempts to do just that,
- * decoding the part of the token after the first `.` into
- * a username.
- *
- * @private
- * @param {string} token an access token
- * @return {string} username
- */
-function getUser(token) {
-  var data = token.split('.')[1];
-  if (!data) return null;
-  data = data.replace(/-/g, '+').replace(/_/g, '/');
-
-  var mod = data.length % 4;
-  if (mod === 2) data += '==';
-  if (mod === 3) data += '=';
-  if (mod === 1 || mod > 3) return null;
-
-  try {
-    return JSON.parse(b64.decode(data)).u;
-  } catch(err) {
-    return null;
-  }
-}
-
-module.exports = getUser;
-
-},{"rest/util/base64":284}],262:[function(require,module,exports){
-'use strict';
-
-var invariant = require('../vendor/invariant');
-var constants = require('./constants');
-var client = require('./client');
-var getUser = require('./get_user');
-
-/**
- * Services all have the same constructor pattern: you initialize them
- * with an access token and options, and they validate those arguments
- * in a predictable way. This is a constructor-generator that makes
- * it possible to require each service's API individually.
- *
- * @private
- * @param {string} name the name of the Mapbox API this class will access:
- * this is set to the name of the function so it will show up in tracebacks
- * @returns {Function} constructor function
- */
-function makeService(name) {
-
-  function service(accessToken, options) {
-    this.name = name;
-
-    invariant(typeof accessToken === 'string',
-      'accessToken required to instantiate Mapbox client');
-
-    var endpoint = constants.DEFAULT_ENDPOINT;
-
-    if (options !== undefined) {
-      invariant(typeof options === 'object', 'options must be an object');
-      if (options.endpoint) {
-        invariant(typeof options.endpoint === 'string', 'endpoint must be a string');
-        endpoint = options.endpoint;
-      }
-      if (options.account) {
-        invariant(typeof options.account === 'string', 'account must be a string');
-        this.owner = options.account;
-      }
-    }
-
-    this.client = client({
-      endpoint: endpoint,
-      accessToken: accessToken
-    });
-
-    this.accessToken = accessToken;
-    this.endpoint = endpoint;
-    this.owner = this.owner || getUser(accessToken);
-    invariant(!!this.owner, 'could not determine account from provided accessToken');
-
-  }
-
-  return service;
-}
-
-module.exports = makeService;
-
-},{"../vendor/invariant":293,"./client":259,"./constants":260,"./get_user":261}],263:[function(require,module,exports){
-'use strict';
-
-var invariant = require('../../vendor/invariant'),
-  hat = require('../../vendor/hat'),
-  makeService = require('../make_service'),
-  constants = require('../constants');
-
-var Datasets = module.exports = makeService('MapboxDatasets');
-
-/**
- * To retrieve a listing of datasets for a particular account.
- * This request requires an access token with the datasets:read scope.
- *
- * @param {Function} callback called with (err, datasets)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.listDatasets(function(err, datasets) {
- *   console.log(datasets);
- *   // [
- *   //   {
- *   //     "owner": {account},
- *   //     "id": {dataset id},
- *   //     "name": {dataset name},
- *   //     "description": {dataset description},
- *   //     "created": {timestamp},
- *   //     "modified": {timestamp}
- *   //   },
- *   //   {
- *   //     "owner": {account},
- *   //     "id": {dataset id},
- *   //     "name": {dataset name},
- *   //     "description": {dataset description},
- *   //     "created": {timestamp},
- *   //     "modified": {timestamp}
- *   //   }
- *   // ]
- * });
- */
-Datasets.prototype.listDatasets = function(callback) {
-  return this.client({
-    path: constants.API_DATASET_DATASETS,
-    params: {
-      owner: this.owner
-    },
-    callback: callback
-  }).entity();
-};
-
-/**
- * To create a new dataset. Valid properties include title and description (not required).
- * This request requires an access token with the datasets:write scope.
- *
- * @param {object} [options] an object defining a dataset's properties
- * @param {string} [options.name] the dataset's name
- * @param {string} [options.description] the dataset's description
- * @param {Function} callback called with (err, dataset)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.createDataset({ name: 'foo', description: 'bar' }, function(err, dataset) {
- *   console.log(dataset);
- *   // {
- *   //   "owner": {account},
- *   //   "id": {dataset id},
- *   //   "name": "foo",
- *   //   "description": "description",
- *   //   "created": {timestamp},
- *   //   "modified": {timestamp}
- *   // }
- * });
- */
-Datasets.prototype.createDataset = function(options, callback) {
-  // permit the options argument to be omitted
-  if (callback === undefined && typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-
-  invariant(typeof options === 'object', 'options must be an object');
-
-  return this.client({
-    path: constants.API_DATASET_DATASETS,
-    params: {
-      owner: this.owner
-    },
-    entity: options,
-    callback: callback
-  }).entity();
-};
-
-/**
- * To retrieve information about a particular dataset.
- * This request requires an access token with the datasets:read scope.
- *
- * @param {string} dataset the id for an existing dataset
- * @param {Function} callback called with (err, dataset)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.readDataset('dataset-id', function(err, dataset) {
- *   console.log(dataset);
- *   // {
- *   //   "owner": {account},
- *   //   "id": "dataset-id",
- *   //   "name": {dataset name},
- *   //   "description": {dataset description},
- *   //   "created": {timestamp},
- *   //   "modified": {timestamp}
- *   // }
- * });
- */
-Datasets.prototype.readDataset = function(dataset, callback) {
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-
-  return this.client({
-    path: constants.API_DATASET_DATASET,
-    params: {
-      owner: this.owner,
-      dataset: dataset
-    },
-    callback: callback
-  }).entity();
-};
-
-/**
- * To make updates to a particular dataset's properties.
- * This request requires an access token with the datasets:write scope.
- *
- * @param {string} dataset the id for an existing dataset
- * @param {object} [options] an object defining updates to the dataset's properties
- * @param {string} [options.name] the updated dataset's name
- * @param {string} [options.description] the updated dataset's description
- * @param {Function} callback called with (err, dataset)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * var options = { name: 'foo' };
- * client.updateDataset('dataset-id', options, function(err, dataset) {
- *   console.log(dataset);
- *   // {
- *   //   "owner": {account},
- *   //   "id": "dataset-id",
- *   //   "name": "foo",
- *   //   "description": {dataset description},
- *   //   "created": {timestamp},
- *   //   "modified": {timestamp}
- *   // }
- * });
- */
-Datasets.prototype.updateDataset = function(dataset, options, callback) {
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-  invariant(typeof options === 'object', 'options must be an object');
-  invariant(!!options.name || !!options.description, 'options must include a name or a description');
-
-  return this.client({
-    path: constants.API_DATASET_DATASET,
-    params: {
-      owner: this.owner,
-      dataset: dataset
-    },
-    method: 'patch',
-    entity: options,
-    callback: callback
-  }).entity();
-};
-
-/**
- * To delete a particular dataset.
- * This request requires an access token with the datasets:write scope.
- *
- * @param {string} dataset the id for an existing dataset
- * @param {Function} callback called with (err)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.deleteDataset('dataset-id', function(err) {
- *   if (!err) console.log('deleted!');
- * });
- */
-Datasets.prototype.deleteDataset = function(dataset, callback) {
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-
-  return this.client({
-    path: constants.API_DATASET_DATASET,
-    params: {
-      owner: this.owner,
-      dataset: dataset
-    },
-    method: 'delete',
-    callback: callback
-  }).entity();
-};
-
-/**
- * Retrive a list of the features in a particular dataset. The response body will be a GeoJSON FeatureCollection.
- * This request requires an access token with the datasets:read scope.
- *
- * @param {string} dataset the id for an existing dataset
- * @param {object} [options] an object for passing pagination arguments
- * @param {boolean} [options.reverse] Set to `true` to reverse the default sort order of the listing.
- * @param {number} [options.limit] The maximum number of objects to return. This value must be between 1 and 100. The API will attempt to return the requested number of objects, but receiving fewer objects does not necessarily signal the end of the collection. Receiving an empty page of results is the only way to determine when you are at the end of a collection.
- * @param {string} [options.start] The object id that acts as the cursor for pagination and defines your location in the collection. This argument is exclusive so the object associated with the id provided to the start argument will not be included in the response.
- * @param {Function} callback called with (err, collection)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.listFeatures('dataset-id', options, function(err, collection) {
- *   console.log(collection);
- *   {
- *     "type": "FeatureCollection",
- *     "features": [
- *       {
- *         "id": {feature id},
- *         "type": "Feature",
- *         "properties": {feature properties}
- *         "geometry": {feature geometry}
- *       },
- *       {
- *         "id": {feature id},
- *         "type": "Feature",
- *         "properties": {feature properties}
- *         "geometry": {feature geometry}
- *       }
- *     ]
- *   }
- * });
- */
-Datasets.prototype.listFeatures = function(dataset, options, callback) {
-  // permit the options argument to be omitted
-  if (callback === undefined && typeof options === 'function') {
-    callback = options;
-    options = {};
-  }
-
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-  invariant(typeof options === 'object', 'options must be a object');
-
-  var params = {
-    owner: this.owner,
-    dataset: dataset
-  };
-
-  if (options.reverse) {
-    invariant(typeof options.reverse === 'boolean', 'reverse option must be a boolean');
-    params.reverse = options.reverse;
-  }
-
-  if (options.limit) {
-    invariant(typeof options.limit === 'number', 'limit option must be a number');
-    params.limit = options.limit;
-  }
-
-  if (options.start) {
-    invariant(typeof options.start === 'string', 'start option must be a string');
-    params.start = options.start;
-  }
-
-  return this.client({
-    path: constants.API_DATASET_FEATURES,
-    params: params,
-    callback: callback
-  }).entity();
-};
-
-/**
- * Insert a feature into a dataset. This can be a new feature, or overwrite an existing one.
- * If overwriting an existing feature, make sure that the feature's `id` property correctly identifies
- * the feature you wish to overwrite.
- * For new features, specifying an `id` is optional. If you do not specify an `id`, one will be assigned
- * and returned as part of the response.
- * This request requires an access token with the datasets:write scope.
- * There are a number of limits to consider when making this request:
- *   - a single feature cannot be larger than 500 KB
- *   - the dataset must not exceed 2000 total features
- *   - the dataset must not exceed a total of 5 MB
- *
- * @param {object} feature the feature to insert. Must be a valid GeoJSON feature per http://geojson.org/geojson-spec.html#feature-objects
- * @param {string} dataset the id for an existing dataset
- * @param {Function} callback called with (err, feature)
- * @returns {undefined} nothing, calls callback
- * @example
- * // Insert a brand new feature without an id
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * var feature = {
- *   "type": "Feature",
- *   "properties": {
- *     "name": "Null Island"
- *   },
- *   "geometry": {
- *     "type": "Point",
- *     "coordinates": [0, 0]
- *   }
- * };
- * client.insertFeature(feature, 'dataset-id', function(err, feature) {
- *   console.log(feature);
- *   // {
- *   //   "id": {feature id},
- *   //   "type": "Feature",
- *   //   "properties": {
- *   //     "name": "Null Island"
- *   //   },
- *   //   "geometry": {
- *   //     "type": "Point",
- *   //     "coordinates": [0, 0]
- *   //   }
- *   // }
- * });
- * @example
- * // Insert a brand new feature with an id, or overwrite an existing feature at that id
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * var feature = {
- *   "id": "feature-id",
- *   "type": "Feature",
- *   "properties": {
- *     "name": "Null Island"
- *   },
- *   "geometry": {
- *     "type": "Point",
- *     "coordinates": [0, 0]
- *   }
- * };
- * client.insertFeature(feature, 'dataset-id', function(err, feature) {
- *   console.log(feature);
- *   // {
- *   //   "id": "feature-id",
- *   //   "type": "Feature",
- *   //   "properties": {
- *   //     "name": "Null Island"
- *   //   },
- *   //   "geometry": {
- *   //     "type": "Point",
- *   //     "coordinates": [0, 0]
- *   //   }
- *   // }
- * });
- */
-Datasets.prototype.insertFeature = function(feature, dataset, callback) {
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-
-  var id = feature.id || hat();
-  invariant(typeof id === 'string', 'The GeoJSON feature\'s id must be a string');
-
-  return this.client({
-    path: constants.API_DATASET_FEATURE,
-    params: {
-      owner: this.owner,
-      dataset: dataset,
-      id: id
-    },
-    method: 'put',
-    entity: feature,
-    callback: callback
-  }).entity();
-};
-
-/**
- * Read an existing feature from a dataset.
- * This request requires an access token with the datasets:read scope.
- *
- * @param {string} id the `id` of the feature to read
- * @param {string} dataset the id for an existing dataset
- * @param {Function} callback called with (err, feature)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.readFeature('feature-id', 'dataset-id', function(err, feature) {
- *   console.log(feature);
- *   // {
- *   //   "id": "feature-id",
- *   //   "type": "Feature",
- *   //   "properties": {
- *   //     "name": "Null Island"
- *   //   },
- *   //   "geometry": {
- *   //     "type": "Point",
- *   //     "coordinates": [0, 0]
- *   //   }
- *   // }
- * });
- */
-Datasets.prototype.readFeature = function(id, dataset, callback) {
-  invariant(typeof id === 'string', 'id must be a string');
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-
-  return this.client({
-    path: constants.API_DATASET_FEATURE,
-    params: {
-      owner: this.owner,
-      dataset: dataset,
-      id: id
-    },
-    callback: callback
-  }).entity();
-};
-
-/**
- * Delete an existing feature from a dataset.
- * This request requires an access token with the datasets:write scope.
- *
- * @param {string} id the `id` of the feature to read
- * @param {string} dataset the id for an existing dataset
- * @param {Function} callback called with (err)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * client.deleteFeature('feature-id', 'dataset-id', function(err, feature) {
- *   if (!err) console.log('deleted!');
- * });
- */
-Datasets.prototype.deleteFeature = function(id, dataset, callback) {
-  invariant(typeof id === 'string', 'id must be a string');
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-
-  return this.client({
-    path: constants.API_DATASET_FEATURE,
-    params: {
-      owner: this.owner,
-      dataset: dataset,
-      id: id
-    },
-    method: 'delete',
-    callback: callback
-  }).entity();
-};
-
-/**
- * Perform a batch of inserts, updates, and deletes to a dataset in a single combined request.
- * This request requires an access token with the datasets:write scope.
- * There are a number of limits to consider when making this request:
- *   - you can send a total of 100 changes (sum of puts + deletes) in a single request
- *   - any single feature cannot be larger than 500 KB
- *   - the dataset must not exceed 2000 total features
- *   - the dataset must not exceed a total of 5 MB
- *
- * @param {object} update an object describing features in insert and/or delete
- * @param {Array<object>} [update.put] features to insert. Each feature must be a valid GeoJSON feature per http://geojson.org/geojson-spec.html#feature-objects
- * @param {Array<string>} [update.delete] ids of features to delete
- * @param {string} dataset the id for an existing dataset
- * @param {Function} callback called with (err, results)
- * @returns {undefined} nothing, calls callback
- * @example
- * var MapboxClient = require('mapbox');
- * var client = new MapboxClient('ACCESSTOKEN');
- * var inserts = [
- *   {
- *     "id": "1",
- *     "type": "Feature",
- *     "properties": {
- *       "name": "Null Island"
- *     },
- *     "geometry": {
- *       "type": "Point",
- *       "coordinates": [0, 0]
- *     }
- *   },
- *   {
- *     "id": "2",
- *     "type": "Feature",
- *     "properties": {
- *       "name": "Offshore from Null Island"
- *     },
- *     "geometry": {
- *       "type": "Point",
- *       "coordinates": [0.01, 0.01]
- *     }
- *   }
- * ];
- * var deletes =[
- *   'feature-id-1',
- *   'feature-id-2'
- * ];
- * client.batchFeatureUpdate({ put: inserts, delete: deletes }, dataset, function(err, results) {
- *  console.log(results);
- * // {
- * //   "put": [
- * //     {
- * //       "id": {feature-id},
- * //       "type": "Feature",
- * //       "properties": {
- * //         "name": "Null Island"
- * //       },
- * //       "geometry": {
- * //         "type": "Point",
- * //         "coordinates": [0, 0]
- * //       }
- * //     },
- * //     {
- * //       "id": {feature-id},
- * //       "type": "Feature",
- * //       "properties": {
- * //         "name": "Offshore from Null Island"
- * //       },
- * //       "geometry": {
- * //         "type": "Point",
- * //         "coordinates": [0.01, 0.01]
- * //       }
- * //     }
- * //   ],
- * //   "delete": [
- * //     "feature-id-1",
- * //     "feature-id-2"
- * //   ]
- * // }
- * });
- */
-Datasets.prototype.batchFeatureUpdate = function(update, dataset, callback) {
-  invariant(typeof update === 'object', 'update must be an object');
-  invariant(typeof dataset === 'string', 'dataset must be a string');
-
-  var inserts = update.put || [];
-  var deletes = update.delete || [];
-
-  invariant(
-    inserts.every(function(feature) { return feature.id; }),
-    'inserted GeoJSON features must include ids'
-  );
-
-  invariant(
-    deletes.every(function(id) { return typeof id === 'string'; }),
-    'update.delete must be an array of strings'
-  );
-
-  return this.client({
-    path: constants.API_DATASET_FEATURES,
-    params: {
-      owner: this.owner,
-      dataset: dataset
-    },
-    method: 'post',
-    entity: { put: inserts, delete: deletes },
-    callback: callback
-  }).entity();
-};
-
-},{"../../vendor/hat":292,"../../vendor/invariant":293,"../constants":260,"../make_service":262}],264:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var mixin, xWWWFormURLEncoder, origin, urlRE, absoluteUrlRE, fullyQualifiedUrlRE;
-
-mixin = require('./util/mixin');
-xWWWFormURLEncoder = require('./mime/type/application/x-www-form-urlencoded');
-
-urlRE = /([a-z][a-z0-9\+\-\.]*:)\/\/([^@]+@)?(([^:\/]+)(:([0-9]+))?)?(\/[^?#]*)?(\?[^#]*)?(#\S*)?/i;
-absoluteUrlRE = /^([a-z][a-z0-9\-\+\.]*:\/\/|\/)/i;
-fullyQualifiedUrlRE = /([a-z][a-z0-9\+\-\.]*:)\/\/([^@]+@)?(([^:\/]+)(:([0-9]+))?)?\//i;
-
-/**
- * Apply params to the template to create a URL.
- *
- * Parameters that are not applied directly to the template, are appended
- * to the URL as query string parameters.
- *
- * @param {string} template the URI template
- * @param {Object} params parameters to apply to the template
- * @return {string} the resulting URL
- */
-function buildUrl(template, params) {
-	// internal builder to convert template with params.
-	var url, name, queryStringParams, queryString, re;
-
-	url = template;
-	queryStringParams = {};
-
-	if (params) {
-		for (name in params) {
-			/*jshint forin:false */
-			re = new RegExp('\\{' + name + '\\}');
-			if (re.test(url)) {
-				url = url.replace(re, encodeURIComponent(params[name]), 'g');
-			}
-			else {
-				queryStringParams[name] = params[name];
-			}
-		}
-
-		queryString = xWWWFormURLEncoder.write(queryStringParams);
-		if (queryString) {
-			url += url.indexOf('?') === -1 ? '?' : '&';
-			url += queryString;
-		}
-	}
-	return url;
-}
-
-function startsWith(str, test) {
-	return str.indexOf(test) === 0;
-}
-
-/**
- * Create a new URL Builder
- *
- * @param {string|UrlBuilder} template the base template to build from, may be another UrlBuilder
- * @param {Object} [params] base parameters
- * @constructor
- */
-function UrlBuilder(template, params) {
-	if (!(this instanceof UrlBuilder)) {
-		// invoke as a constructor
-		return new UrlBuilder(template, params);
-	}
-
-	if (template instanceof UrlBuilder) {
-		this._template = template.template;
-		this._params = mixin({}, this._params, params);
-	}
-	else {
-		this._template = (template || '').toString();
-		this._params = params || {};
-	}
-}
-
-UrlBuilder.prototype = {
-
-	/**
-	 * Create a new UrlBuilder instance that extends the current builder.
-	 * The current builder is unmodified.
-	 *
-	 * @param {string} [template] URL template to append to the current template
-	 * @param {Object} [params] params to combine with current params.  New params override existing params
-	 * @return {UrlBuilder} the new builder
-	 */
-	append: function (template,  params) {
-		// TODO consider query strings and fragments
-		return new UrlBuilder(this._template + template, mixin({}, this._params, params));
-	},
-
-	/**
-	 * Create a new UrlBuilder with a fully qualified URL based on the
-	 * window's location or base href and the current templates relative URL.
-	 *
-	 * Path variables are preserved.
-	 *
-	 * *Browser only*
-	 *
-	 * @return {UrlBuilder} the fully qualified URL template
-	 */
-	fullyQualify: function () {
-		if (typeof location === 'undefined') { return this; }
-		if (this.isFullyQualified()) { return this; }
-
-		var template = this._template;
-
-		if (startsWith(template, '//')) {
-			template = origin.protocol + template;
-		}
-		else if (startsWith(template, '/')) {
-			template = origin.origin + template;
-		}
-		else if (!this.isAbsolute()) {
-			template = origin.origin + origin.pathname.substring(0, origin.pathname.lastIndexOf('/') + 1);
-		}
-
-		if (template.indexOf('/', 8) === -1) {
-			// default the pathname to '/'
-			template = template + '/';
-		}
-
-		return new UrlBuilder(template, this._params);
-	},
-
-	/**
-	 * True if the URL is absolute
-	 *
-	 * @return {boolean}
-	 */
-	isAbsolute: function () {
-		return absoluteUrlRE.test(this.build());
-	},
-
-	/**
-	 * True if the URL is fully qualified
-	 *
-	 * @return {boolean}
-	 */
-	isFullyQualified: function () {
-		return fullyQualifiedUrlRE.test(this.build());
-	},
-
-	/**
-	 * True if the URL is cross origin. The protocol, host and port must not be
-	 * the same in order to be cross origin,
-	 *
-	 * @return {boolean}
-	 */
-	isCrossOrigin: function () {
-		if (!origin) {
-			return true;
-		}
-		var url = this.parts();
-		return url.protocol !== origin.protocol ||
-		       url.hostname !== origin.hostname ||
-		       url.port !== origin.port;
-	},
-
-	/**
-	 * Split a URL into its consituent parts following the naming convention of
-	 * 'window.location'. One difference is that the port will contain the
-	 * protocol default if not specified.
-	 *
-	 * @see https://developer.mozilla.org/en-US/docs/DOM/window.location
-	 *
-	 * @returns {Object} a 'window.location'-like object
-	 */
-	parts: function () {
-		/*jshint maxcomplexity:20 */
-		var url, parts;
-		url = this.fullyQualify().build().match(urlRE);
-		parts = {
-			href: url[0],
-			protocol: url[1],
-			host: url[3] || '',
-			hostname: url[4] || '',
-			port: url[6],
-			pathname: url[7] || '',
-			search: url[8] || '',
-			hash: url[9] || ''
-		};
-		parts.origin = parts.protocol + '//' + parts.host;
-		parts.port = parts.port || (parts.protocol === 'https:' ? '443' : parts.protocol === 'http:' ? '80' : '');
-		return parts;
-	},
-
-	/**
-	 * Expand the template replacing path variables with parameters
-	 *
-	 * @param {Object} [params] params to combine with current params.  New params override existing params
-	 * @return {string} the expanded URL
-	 */
-	build: function (params) {
-		return buildUrl(this._template, mixin({}, this._params, params));
-	},
-
-	/**
-	 * @see build
-	 */
-	toString: function () {
-		return this.build();
-	}
-
-};
-
-origin = typeof location !== 'undefined' ? new UrlBuilder(location.href).parts() : void 0;
-
-module.exports = UrlBuilder;
-
-},{"./mime/type/application/x-www-form-urlencoded":280,"./util/mixin":287}],265:[function(require,module,exports){
-/*
- * Copyright 2014-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var rest = require('./client/default'),
-    browser = require('./client/xhr');
-
-rest.setPlatformDefaultClient(browser);
-
-module.exports = rest;
-
-},{"./client/default":267,"./client/xhr":268}],266:[function(require,module,exports){
-/*
- * Copyright 2014-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-/**
- * Add common helper methods to a client impl
- *
- * @param {function} impl the client implementation
- * @param {Client} [target] target of this client, used when wrapping other clients
- * @returns {Client} the client impl with additional methods
- */
-module.exports = function client(impl, target) {
-
-	if (target) {
-
-		/**
-		 * @returns {Client} the target client
-		 */
-		impl.skip = function skip() {
-			return target;
-		};
-
-	}
-
-	/**
-	 * Allow a client to easily be wrapped by an interceptor
-	 *
-	 * @param {Interceptor} interceptor the interceptor to wrap this client with
-	 * @param [config] configuration for the interceptor
-	 * @returns {Client} the newly wrapped client
-	 */
-	impl.wrap = function wrap(interceptor, config) {
-		return interceptor(impl, config);
-	};
-
-	/**
-	 * @deprecated
-	 */
-	impl.chain = function chain() {
-		if (typeof console !== 'undefined') {
-			console.log('rest.js: client.chain() is deprecated, use client.wrap() instead');
-		}
-
-		return impl.wrap.apply(this, arguments);
-	};
-
-	return impl;
-
-};
-
-},{}],267:[function(require,module,exports){
-/*
- * Copyright 2014-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-/**
- * Plain JS Object containing properties that represent an HTTP request.
- *
- * Depending on the capabilities of the underlying client, a request
- * may be cancelable. If a request may be canceled, the client will add
- * a canceled flag and cancel function to the request object. Canceling
- * the request will put the response into an error state.
- *
- * @field {string} [method='GET'] HTTP method, commonly GET, POST, PUT, DELETE or HEAD
- * @field {string|UrlBuilder} [path=''] path template with optional path variables
- * @field {Object} [params] parameters for the path template and query string
- * @field {Object} [headers] custom HTTP headers to send, in addition to the clients default headers
- * @field [entity] the HTTP entity, common for POST or PUT requests
- * @field {boolean} [canceled] true if the request has been canceled, set by the client
- * @field {Function} [cancel] cancels the request if invoked, provided by the client
- * @field {Client} [originator] the client that first handled this request, provided by the interceptor
- *
- * @class Request
- */
-
-/**
- * Plain JS Object containing properties that represent an HTTP response
- *
- * @field {Object} [request] the request object as received by the root client
- * @field {Object} [raw] the underlying request object, like XmlHttpRequest in a browser
- * @field {number} [status.code] status code of the response (i.e. 200, 404)
- * @field {string} [status.text] status phrase of the response
- * @field {Object] [headers] response headers hash of normalized name, value pairs
- * @field [entity] the response body
- *
- * @class Response
- */
-
-/**
- * HTTP client particularly suited for RESTful operations.
- *
- * @field {function} wrap wraps this client with a new interceptor returning the wrapped client
- *
- * @param {Request} the HTTP request
- * @returns {ResponsePromise<Response>} a promise the resolves to the HTTP response
- *
- * @class Client
- */
-
- /**
-  * Extended when.js Promises/A+ promise with HTTP specific helpers
-  *q
-  * @method entity promise for the HTTP entity
-  * @method status promise for the HTTP status code
-  * @method headers promise for the HTTP response headers
-  * @method header promise for a specific HTTP response header
-  *
-  * @class ResponsePromise
-  * @extends Promise
-  */
-
-var client, target, platformDefault;
-
-client = require('../client');
-
-if (typeof Promise !== 'function' && console && console.log) {
-	console.log('An ES6 Promise implementation is required to use rest.js. See https://github.com/cujojs/when/blob/master/docs/es6-promise-shim.md for using when.js as a Promise polyfill.');
-}
-
-/**
- * Make a request with the default client
- * @param {Request} the HTTP request
- * @returns {Promise<Response>} a promise the resolves to the HTTP response
- */
-function defaultClient() {
-	return target.apply(void 0, arguments);
-}
-
-/**
- * Change the default client
- * @param {Client} client the new default client
- */
-defaultClient.setDefaultClient = function setDefaultClient(client) {
-	target = client;
-};
-
-/**
- * Obtain a direct reference to the current default client
- * @returns {Client} the default client
- */
-defaultClient.getDefaultClient = function getDefaultClient() {
-	return target;
-};
-
-/**
- * Reset the default client to the platform default
- */
-defaultClient.resetDefaultClient = function resetDefaultClient() {
-	target = platformDefault;
-};
-
-/**
- * @private
- */
-defaultClient.setPlatformDefaultClient = function setPlatformDefaultClient(client) {
-	if (platformDefault) {
-		throw new Error('Unable to redefine platformDefaultClient');
-	}
-	target = platformDefault = client;
-};
-
-module.exports = client(defaultClient);
-
-},{"../client":266}],268:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var normalizeHeaderName, responsePromise, client, headerSplitRE;
-
-normalizeHeaderName = require('../util/normalizeHeaderName');
-responsePromise = require('../util/responsePromise');
-client = require('../client');
-
-// according to the spec, the line break is '\r\n', but doesn't hold true in practice
-headerSplitRE = /[\r|\n]+/;
-
-function parseHeaders(raw) {
-	// Note: Set-Cookie will be removed by the browser
-	var headers = {};
-
-	if (!raw) { return headers; }
-
-	raw.trim().split(headerSplitRE).forEach(function (header) {
-		var boundary, name, value;
-		boundary = header.indexOf(':');
-		name = normalizeHeaderName(header.substring(0, boundary).trim());
-		value = header.substring(boundary + 1).trim();
-		if (headers[name]) {
-			if (Array.isArray(headers[name])) {
-				// add to an existing array
-				headers[name].push(value);
-			}
-			else {
-				// convert single value to array
-				headers[name] = [headers[name], value];
-			}
-		}
-		else {
-			// new, single value
-			headers[name] = value;
-		}
-	});
-
-	return headers;
-}
-
-function safeMixin(target, source) {
-	Object.keys(source || {}).forEach(function (prop) {
-		// make sure the property already exists as
-		// IE 6 will blow up if we add a new prop
-		if (source.hasOwnProperty(prop) && prop in target) {
-			try {
-				target[prop] = source[prop];
-			}
-			catch (e) {
-				// ignore, expected for some properties at some points in the request lifecycle
-			}
-		}
-	});
-
-	return target;
-}
-
-module.exports = client(function xhr(request) {
-	return responsePromise.promise(function (resolve, reject) {
-		/*jshint maxcomplexity:20 */
-
-		var client, method, url, headers, entity, headerName, response, XHR;
-
-		request = typeof request === 'string' ? { path: request } : request || {};
-		response = { request: request };
-
-		if (request.canceled) {
-			response.error = 'precanceled';
-			reject(response);
-			return;
-		}
-
-		XHR = request.engine || XMLHttpRequest;
-		if (!XHR) {
-			reject({ request: request, error: 'xhr-not-available' });
-			return;
-		}
-
-		entity = request.entity;
-		request.method = request.method || (entity ? 'POST' : 'GET');
-		method = request.method;
-		url = response.url = request.path || '';
-
-		try {
-			client = response.raw = new XHR();
-
-			// mixin extra request properties before and after opening the request as some properties require being set at different phases of the request
-			safeMixin(client, request.mixin);
-			client.open(method, url, true);
-			safeMixin(client, request.mixin);
-
-			headers = request.headers;
-			for (headerName in headers) {
-				/*jshint forin:false */
-				if (headerName === 'Content-Type' && headers[headerName] === 'multipart/form-data') {
-					// XMLHttpRequest generates its own Content-Type header with the
-					// appropriate multipart boundary when sending multipart/form-data.
-					continue;
-				}
-
-				client.setRequestHeader(headerName, headers[headerName]);
-			}
-
-			request.canceled = false;
-			request.cancel = function cancel() {
-				request.canceled = true;
-				client.abort();
-				reject(response);
-			};
-
-			client.onreadystatechange = function (/* e */) {
-				if (request.canceled) { return; }
-				if (client.readyState === (XHR.DONE || 4)) {
-					response.status = {
-						code: client.status,
-						text: client.statusText
-					};
-					response.headers = parseHeaders(client.getAllResponseHeaders());
-					response.entity = client.responseText;
-
-					// #125 -- Sometimes IE8-9 uses 1223 instead of 204
-					// http://stackoverflow.com/questions/10046972/msie-returns-status-code-of-1223-for-ajax-request
-					if (response.status.code === 1223) {
-						response.status.code = 204;
-					}
-
-					if (response.status.code > 0) {
-						// check status code as readystatechange fires before error event
-						resolve(response);
-					}
-					else {
-						// give the error callback a chance to fire before resolving
-						// requests for file:// URLs do not have a status code
-						setTimeout(function () {
-							resolve(response);
-						}, 0);
-					}
-				}
-			};
-
-			try {
-				client.onerror = function (/* e */) {
-					response.error = 'loaderror';
-					reject(response);
-				};
-			}
-			catch (e) {
-				// IE 6 will not support error handling
-			}
-
-			client.send(entity);
-		}
-		catch (e) {
-			response.error = 'loaderror';
-			reject(response);
-		}
-
-	});
-});
-
-},{"../client":266,"../util/normalizeHeaderName":288,"../util/responsePromise":289}],269:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var defaultClient, mixin, responsePromise, client;
-
-defaultClient = require('./client/default');
-mixin = require('./util/mixin');
-responsePromise = require('./util/responsePromise');
-client = require('./client');
-
-/**
- * Interceptors have the ability to intercept the request and/org response
- * objects.  They may augment, prune, transform or replace the
- * request/response as needed.  Clients may be composed by wrapping
- * together multiple interceptors.
- *
- * Configured interceptors are functional in nature.  Wrapping a client in
- * an interceptor will not affect the client, merely the data that flows in
- * and out of that client.  A common configuration can be created once and
- * shared; specialization can be created by further wrapping that client
- * with custom interceptors.
- *
- * @param {Client} [target] client to wrap
- * @param {Object} [config] configuration for the interceptor, properties will be specific to the interceptor implementation
- * @returns {Client} A client wrapped with the interceptor
- *
- * @class Interceptor
- */
-
-function defaultInitHandler(config) {
-	return config;
-}
-
-function defaultRequestHandler(request /*, config, meta */) {
-	return request;
-}
-
-function defaultResponseHandler(response /*, config, meta */) {
-	return response;
-}
-
-/**
- * Alternate return type for the request handler that allows for more complex interactions.
- *
- * @param properties.request the traditional request return object
- * @param {Promise} [properties.abort] promise that resolves if/when the request is aborted
- * @param {Client} [properties.client] override the defined client with an alternate client
- * @param [properties.response] response for the request, short circuit the request
- */
-function ComplexRequest(properties) {
-	if (!(this instanceof ComplexRequest)) {
-		// in case users forget the 'new' don't mix into the interceptor
-		return new ComplexRequest(properties);
-	}
-	mixin(this, properties);
-}
-
-/**
- * Create a new interceptor for the provided handlers.
- *
- * @param {Function} [handlers.init] one time intialization, must return the config object
- * @param {Function} [handlers.request] request handler
- * @param {Function} [handlers.response] response handler regardless of error state
- * @param {Function} [handlers.success] response handler when the request is not in error
- * @param {Function} [handlers.error] response handler when the request is in error, may be used to 'unreject' an error state
- * @param {Function} [handlers.client] the client to use if otherwise not specified, defaults to platform default client
- *
- * @returns {Interceptor}
- */
-function interceptor(handlers) {
-
-	var initHandler, requestHandler, successResponseHandler, errorResponseHandler;
-
-	handlers = handlers || {};
-
-	initHandler            = handlers.init    || defaultInitHandler;
-	requestHandler         = handlers.request || defaultRequestHandler;
-	successResponseHandler = handlers.success || handlers.response || defaultResponseHandler;
-	errorResponseHandler   = handlers.error   || function () {
-		// Propagate the rejection, with the result of the handler
-		return Promise.resolve((handlers.response || defaultResponseHandler).apply(this, arguments))
-			.then(Promise.reject.bind(Promise));
-	};
-
-	return function (target, config) {
-
-		if (typeof target === 'object') {
-			config = target;
-		}
-		if (typeof target !== 'function') {
-			target = handlers.client || defaultClient;
-		}
-
-		config = initHandler(config || {});
-
-		function interceptedClient(request) {
-			var context, meta;
-			context = {};
-			meta = { 'arguments': Array.prototype.slice.call(arguments), client: interceptedClient };
-			request = typeof request === 'string' ? { path: request } : request || {};
-			request.originator = request.originator || interceptedClient;
-			return responsePromise(
-				requestHandler.call(context, request, config, meta),
-				function (request) {
-					var response, abort, next;
-					next = target;
-					if (request instanceof ComplexRequest) {
-						// unpack request
-						abort = request.abort;
-						next = request.client || next;
-						response = request.response;
-						// normalize request, must be last
-						request = request.request;
-					}
-					response = response || Promise.resolve(request).then(function (request) {
-						return Promise.resolve(next(request)).then(
-							function (response) {
-								return successResponseHandler.call(context, response, config, meta);
-							},
-							function (response) {
-								return errorResponseHandler.call(context, response, config, meta);
-							}
-						);
-					});
-					return abort ? Promise.race([response, abort]) : response;
-				},
-				function (error) {
-					return Promise.reject({ request: request, error: error });
-				}
-			);
-		}
-
-		return client(interceptedClient, target);
-	};
-}
-
-interceptor.ComplexRequest = ComplexRequest;
-
-module.exports = interceptor;
-
-},{"./client":266,"./client/default":267,"./util/mixin":287,"./util/responsePromise":289}],270:[function(require,module,exports){
-/*
- * Copyright 2013-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var interceptor, mixinUtil, defaulter;
-
-interceptor = require('../interceptor');
-mixinUtil = require('../util/mixin');
-
-defaulter = (function () {
-
-	function mixin(prop, target, defaults) {
-		if (prop in target || prop in defaults) {
-			target[prop] = mixinUtil({}, defaults[prop], target[prop]);
-		}
-	}
-
-	function copy(prop, target, defaults) {
-		if (prop in defaults && !(prop in target)) {
-			target[prop] = defaults[prop];
-		}
-	}
-
-	var mappings = {
-		method: copy,
-		path: copy,
-		params: mixin,
-		headers: mixin,
-		entity: copy,
-		mixin: mixin
-	};
-
-	return function (target, defaults) {
-		for (var prop in mappings) {
-			/*jshint forin: false */
-			mappings[prop](prop, target, defaults);
-		}
-		return target;
-	};
-
-}());
-
-/**
- * Provide default values for a request. These values will be applied to the
- * request if the request object does not already contain an explicit value.
- *
- * For 'params', 'headers', and 'mixin', individual values are mixed in with the
- * request's values. The result is a new object representiing the combined
- * request and config values. Neither input object is mutated.
- *
- * @param {Client} [client] client to wrap
- * @param {string} [config.method] the default method
- * @param {string} [config.path] the default path
- * @param {Object} [config.params] the default params, mixed with the request's existing params
- * @param {Object} [config.headers] the default headers, mixed with the request's existing headers
- * @param {Object} [config.mixin] the default "mixins" (http/https options), mixed with the request's existing "mixins"
- *
- * @returns {Client}
- */
-module.exports = interceptor({
-	request: function handleRequest(request, config) {
-		return defaulter(request, config);
-	}
-});
-
-},{"../interceptor":269,"../util/mixin":287}],271:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var interceptor;
-
-interceptor = require('../interceptor');
-
-/**
- * Rejects the response promise based on the status code.
- *
- * Codes greater than or equal to the provided value are rejected.  Default
- * value 400.
- *
- * @param {Client} [client] client to wrap
- * @param {number} [config.code=400] code to indicate a rejection
- *
- * @returns {Client}
- */
-module.exports = interceptor({
-	init: function (config) {
-		config.code = config.code || 400;
-		return config;
-	},
-	response: function (response, config) {
-		if (response.status && response.status.code >= config.code) {
-			return Promise.reject(response);
-		}
-		return response;
-	}
-});
-
-},{"../interceptor":269}],272:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var interceptor, mime, registry, noopConverter, missingConverter, attempt;
-
-interceptor = require('../interceptor');
-mime = require('../mime');
-registry = require('../mime/registry');
-attempt = require('../util/attempt');
-
-noopConverter = {
-	read: function (obj) { return obj; },
-	write: function (obj) { return obj; }
-};
-
-missingConverter = {
-	read: function () { throw 'No read method found on converter'; },
-	write: function () { throw 'No write method found on converter'; }
-};
-
-/**
- * MIME type support for request and response entities.  Entities are
- * (de)serialized using the converter for the MIME type.
- *
- * Request entities are converted using the desired converter and the
- * 'Accept' request header prefers this MIME.
- *
- * Response entities are converted based on the Content-Type response header.
- *
- * @param {Client} [client] client to wrap
- * @param {string} [config.mime='text/plain'] MIME type to encode the request
- *   entity
- * @param {string} [config.accept] Accept header for the request
- * @param {Client} [config.client=<request.originator>] client passed to the
- *   converter, defaults to the client originating the request
- * @param {Registry} [config.registry] MIME registry, defaults to the root
- *   registry
- * @param {boolean} [config.permissive] Allow an unkown request MIME type
- *
- * @returns {Client}
- */
-module.exports = interceptor({
-	init: function (config) {
-		config.registry = config.registry || registry;
-		return config;
-	},
-	request: function (request, config) {
-		var type, headers;
-
-		headers = request.headers || (request.headers = {});
-		type = mime.parse(headers['Content-Type'] || config.mime || 'text/plain');
-		headers.Accept = headers.Accept || config.accept || type.raw + ', application/json;q=0.8, text/plain;q=0.5, */*;q=0.2';
-
-		if (!('entity' in request)) {
-			return request;
-		}
-
-		headers['Content-Type'] = type.raw;
-
-		return config.registry.lookup(type)['catch'](function () {
-			// failed to resolve converter
-			if (config.permissive) {
-				return noopConverter;
-			}
-			throw 'mime-unknown';
-		}).then(function (converter) {
-			var client = config.client || request.originator,
-				write = converter.write || missingConverter.write;
-
-			return attempt(write.bind(void 0, request.entity, { client: client, request: request, mime: type, registry: config.registry }))
-				['catch'](function() {
-					throw 'mime-serialization';
-				})
-				.then(function(entity) {
-					request.entity = entity;
-					return request;
-				});
-		});
-	},
-	response: function (response, config) {
-		if (!(response.headers && response.headers['Content-Type'] && response.entity)) {
-			return response;
-		}
-
-		var type = mime.parse(response.headers['Content-Type']);
-
-		return config.registry.lookup(type)['catch'](function () { return noopConverter; }).then(function (converter) {
-			var client = config.client || response.request && response.request.originator,
-				read = converter.read || missingConverter.read;
-
-			return attempt(read.bind(void 0, response.entity, { client: client, response: response, mime: type, registry: config.registry }))
-				['catch'](function (e) {
-					response.error = 'mime-deserialization';
-					response.cause = e;
-					throw response;
-				})
-				.then(function (entity) {
-					response.entity = entity;
-					return response;
-				});
-		});
-	}
-});
-
-},{"../interceptor":269,"../mime":276,"../mime/registry":277,"../util/attempt":283}],273:[function(require,module,exports){
-/*
- * Copyright 2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var interceptor, UrlBuilder;
-
-interceptor = require('../interceptor');
-UrlBuilder = require('../UrlBuilder');
-
-/**
- * Applies request params to the path by token replacement
- *
- * Params not applied as a token are appended to the query string. Params
- * are removed from the request object, as they have been consumed.
- *
- * @deprecated The template interceptor `rest/interceptor/template` is a
- * much richer way to apply paramters to a template. This interceptor is
- * available as a bridge to users who previousled depended on this
- * functionality being available directly on clients.
- *
- * @param {Client} [client] client to wrap
- * @param {Object} [config.params] default param values
- *
- * @returns {Client}
- */
-module.exports = interceptor({
-	init: function (config) {
-		config.params = config.params || {};
-		return config;
-	},
-	request: function (request, config) {
-		var path, params;
-
-		path = request.path || '';
-		params = request.params || {};
-
-		request.path = new UrlBuilder(path, config.params).append('', params).build();
-		delete request.params;
-
-		return request;
-	}
-});
-
-},{"../UrlBuilder":264,"../interceptor":269}],274:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var interceptor, UrlBuilder;
-
-interceptor = require('../interceptor');
-UrlBuilder = require('../UrlBuilder');
-
-function startsWith(str, prefix) {
-	return str.indexOf(prefix) === 0;
-}
-
-function endsWith(str, suffix) {
-	return str.lastIndexOf(suffix) + suffix.length === str.length;
-}
-
-/**
- * Prefixes the request path with a common value.
- *
- * @param {Client} [client] client to wrap
- * @param {number} [config.prefix] path prefix
- *
- * @returns {Client}
- */
-module.exports = interceptor({
-	request: function (request, config) {
-		var path;
-
-		if (config.prefix && !(new UrlBuilder(request.path).isFullyQualified())) {
-			path = config.prefix;
-			if (request.path) {
-				if (!endsWith(path, '/') && !startsWith(request.path, '/')) {
-					// add missing '/' between path sections
-					path += '/';
-				}
-				path += request.path;
-			}
-			request.path = path;
-		}
-
-		return request;
-	}
-});
-
-},{"../UrlBuilder":264,"../interceptor":269}],275:[function(require,module,exports){
-/*
- * Copyright 2015-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var interceptor, uriTemplate, mixin;
-
-interceptor = require('../interceptor');
-uriTemplate = require('../util/uriTemplate');
-mixin = require('../util/mixin');
-
-/**
- * Applies request params to the path as a URI Template
- *
- * Params are removed from the request object, as they have been consumed.
- *
- * @see https://tools.ietf.org/html/rfc6570
- *
- * @param {Client} [client] client to wrap
- * @param {Object} [config.params] default param values
- * @param {string} [config.template] default template
- *
- * @returns {Client}
- */
-module.exports = interceptor({
-	init: function (config) {
-		config.params = config.params || {};
-		config.template = config.template || '';
-		return config;
-	},
-	request: function (request, config) {
-		var template, params;
-
-		template = request.path || config.template;
-		params = mixin({}, request.params, config.params);
-
-		request.path = uriTemplate.expand(template, params);
-		delete request.params;
-
-		return request;
-	}
-});
-
-},{"../interceptor":269,"../util/mixin":287,"../util/uriTemplate":291}],276:[function(require,module,exports){
-/*
-* Copyright 2014-2016 the original author or authors
-* @license MIT, see LICENSE.txt for details
-*
-* @author Scott Andrews
-*/
-
-'use strict';
-
-/**
- * Parse a MIME type into it's constituent parts
- *
- * @param {string} mime MIME type to parse
- * @return {{
- *   {string} raw the original MIME type
- *   {string} type the type and subtype
- *   {string} [suffix] mime suffix, including the plus, if any
- *   {Object} params key/value pair of attributes
- * }}
- */
-function parse(mime) {
-	var params, type;
-
-	params = mime.split(';');
-	type = params[0].trim().split('+');
-
-	return {
-		raw: mime,
-		type: type[0],
-		suffix: type[1] ? '+' + type[1] : '',
-		params: params.slice(1).reduce(function (params, pair) {
-			pair = pair.split('=');
-			params[pair[0].trim()] = pair[1] ? pair[1].trim() : void 0;
-			return params;
-		}, {})
-	};
-}
-
-module.exports = {
-	parse: parse
-};
-
-},{}],277:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var mime, registry;
-
-mime = require('../mime');
-
-function Registry(mimes) {
-
-	/**
-	 * Lookup the converter for a MIME type
-	 *
-	 * @param {string} type the MIME type
-	 * @return a promise for the converter
-	 */
-	this.lookup = function lookup(type) {
-		var parsed;
-
-		parsed = typeof type === 'string' ? mime.parse(type) : type;
-
-		if (mimes[parsed.raw]) {
-			return mimes[parsed.raw];
-		}
-		if (mimes[parsed.type + parsed.suffix]) {
-			return mimes[parsed.type + parsed.suffix];
-		}
-		if (mimes[parsed.type]) {
-			return mimes[parsed.type];
-		}
-		if (mimes[parsed.suffix]) {
-			return mimes[parsed.suffix];
-		}
-
-		return Promise.reject(new Error('Unable to locate converter for mime "' + parsed.raw + '"'));
-	};
-
-	/**
-	 * Create a late dispatched proxy to the target converter.
-	 *
-	 * Common when a converter is registered under multiple names and
-	 * should be kept in sync if updated.
-	 *
-	 * @param {string} type mime converter to dispatch to
-	 * @returns converter whose read/write methods target the desired mime converter
-	 */
-	this.delegate = function delegate(type) {
-		return {
-			read: function () {
-				var args = arguments;
-				return this.lookup(type).then(function (converter) {
-					return converter.read.apply(this, args);
-				}.bind(this));
-			}.bind(this),
-			write: function () {
-				var args = arguments;
-				return this.lookup(type).then(function (converter) {
-					return converter.write.apply(this, args);
-				}.bind(this));
-			}.bind(this)
-		};
-	};
-
-	/**
-	 * Register a custom converter for a MIME type
-	 *
-	 * @param {string} type the MIME type
-	 * @param converter the converter for the MIME type
-	 * @return a promise for the converter
-	 */
-	this.register = function register(type, converter) {
-		mimes[type] = Promise.resolve(converter);
-		return mimes[type];
-	};
-
-	/**
-	 * Create a child registry whoes registered converters remain local, while
-	 * able to lookup converters from its parent.
-	 *
-	 * @returns child MIME registry
-	 */
-	this.child = function child() {
-		return new Registry(Object.create(mimes));
-	};
-
-}
-
-registry = new Registry({});
-
-// include provided serializers
-registry.register('application/hal', require('./type/application/hal'));
-registry.register('application/json', require('./type/application/json'));
-registry.register('application/x-www-form-urlencoded', require('./type/application/x-www-form-urlencoded'));
-registry.register('multipart/form-data', require('./type/multipart/form-data'));
-registry.register('text/plain', require('./type/text/plain'));
-
-registry.register('+json', registry.delegate('application/json'));
-
-module.exports = registry;
-
-},{"../mime":276,"./type/application/hal":278,"./type/application/json":279,"./type/application/x-www-form-urlencoded":280,"./type/multipart/form-data":281,"./type/text/plain":282}],278:[function(require,module,exports){
-/*
- * Copyright 2013-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var pathPrefix, template, find, lazyPromise, responsePromise;
-
-pathPrefix = require('../../../interceptor/pathPrefix');
-template = require('../../../interceptor/template');
-find = require('../../../util/find');
-lazyPromise = require('../../../util/lazyPromise');
-responsePromise = require('../../../util/responsePromise');
-
-function defineProperty(obj, name, value) {
-	Object.defineProperty(obj, name, {
-		value: value,
-		configurable: true,
-		enumerable: false,
-		writeable: true
-	});
-}
-
-/**
- * Hypertext Application Language serializer
- *
- * Implemented to https://tools.ietf.org/html/draft-kelly-json-hal-06
- *
- * As the spec is still a draft, this implementation will be updated as the
- * spec evolves
- *
- * Objects are read as HAL indexing links and embedded objects on to the
- * resource. Objects are written as plain JSON.
- *
- * Embedded relationships are indexed onto the resource by the relationship
- * as a promise for the related resource.
- *
- * Links are indexed onto the resource as a lazy promise that will GET the
- * resource when a handler is first registered on the promise.
- *
- * A `requestFor` method is added to the entity to make a request for the
- * relationship.
- *
- * A `clientFor` method is added to the entity to get a full Client for a
- * relationship.
- *
- * The `_links` and `_embedded` properties on the resource are made
- * non-enumerable.
- */
-module.exports = {
-
-	read: function (str, opts) {
-		var client, console;
-
-		opts = opts || {};
-		client = opts.client;
-		console = opts.console || console;
-
-		function deprecationWarning(relationship, deprecation) {
-			if (deprecation && console && console.warn || console.log) {
-				(console.warn || console.log).call(console, 'Relationship \'' + relationship + '\' is deprecated, see ' + deprecation);
-			}
-		}
-
-		return opts.registry.lookup(opts.mime.suffix).then(function (converter) {
-			return converter.read(str, opts);
-		}).then(function (root) {
-			find.findProperties(root, '_embedded', function (embedded, resource, name) {
-				Object.keys(embedded).forEach(function (relationship) {
-					if (relationship in resource) { return; }
-					var related = responsePromise({
-						entity: embedded[relationship]
-					});
-					defineProperty(resource, relationship, related);
-				});
-				defineProperty(resource, name, embedded);
-			});
-			find.findProperties(root, '_links', function (links, resource, name) {
-				Object.keys(links).forEach(function (relationship) {
-					var link = links[relationship];
-					if (relationship in resource) { return; }
-					defineProperty(resource, relationship, responsePromise.make(lazyPromise(function () {
-						if (link.deprecation) { deprecationWarning(relationship, link.deprecation); }
-						if (link.templated === true) {
-							return template(client)({ path: link.href });
-						}
-						return client({ path: link.href });
-					})));
-				});
-				defineProperty(resource, name, links);
-				defineProperty(resource, 'clientFor', function (relationship, clientOverride) {
-					var link = links[relationship];
-					if (!link) {
-						throw new Error('Unknown relationship: ' + relationship);
-					}
-					if (link.deprecation) { deprecationWarning(relationship, link.deprecation); }
-					if (link.templated === true) {
-						return template(
-							clientOverride || client,
-							{ template: link.href }
-						);
-					}
-					return pathPrefix(
-						clientOverride || client,
-						{ prefix: link.href }
-					);
-				});
-				defineProperty(resource, 'requestFor', function (relationship, request, clientOverride) {
-					var client = this.clientFor(relationship, clientOverride);
-					return client(request);
-				});
-			});
-
-			return root;
-		});
-
-	},
-
-	write: function (obj, opts) {
-		return opts.registry.lookup(opts.mime.suffix).then(function (converter) {
-			return converter.write(obj, opts);
-		});
-	}
-
-};
-
-},{"../../../interceptor/pathPrefix":274,"../../../interceptor/template":275,"../../../util/find":285,"../../../util/lazyPromise":286,"../../../util/responsePromise":289}],279:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-/**
- * Create a new JSON converter with custom reviver/replacer.
- *
- * The extended converter must be published to a MIME registry in order
- * to be used. The existing converter will not be modified.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON
- *
- * @param {function} [reviver=undefined] custom JSON.parse reviver
- * @param {function|Array} [replacer=undefined] custom JSON.stringify replacer
- */
-function createConverter(reviver, replacer) {
-	return {
-
-		read: function (str) {
-			return JSON.parse(str, reviver);
-		},
-
-		write: function (obj) {
-			return JSON.stringify(obj, replacer);
-		},
-
-		extend: createConverter
-
-	};
-}
-
-module.exports = createConverter();
-
-},{}],280:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var encodedSpaceRE, urlEncodedSpaceRE;
-
-encodedSpaceRE = /%20/g;
-urlEncodedSpaceRE = /\+/g;
-
-function urlEncode(str) {
-	str = encodeURIComponent(str);
-	// spec says space should be encoded as '+'
-	return str.replace(encodedSpaceRE, '+');
-}
-
-function urlDecode(str) {
-	// spec says space should be encoded as '+'
-	str = str.replace(urlEncodedSpaceRE, ' ');
-	return decodeURIComponent(str);
-}
-
-function append(str, name, value) {
-	if (Array.isArray(value)) {
-		value.forEach(function (value) {
-			str = append(str, name, value);
-		});
-	}
-	else {
-		if (str.length > 0) {
-			str += '&';
-		}
-		str += urlEncode(name);
-		if (value !== undefined && value !== null) {
-			str += '=' + urlEncode(value);
-		}
-	}
-	return str;
-}
-
-module.exports = {
-
-	read: function (str) {
-		var obj = {};
-		str.split('&').forEach(function (entry) {
-			var pair, name, value;
-			pair = entry.split('=');
-			name = urlDecode(pair[0]);
-			if (pair.length === 2) {
-				value = urlDecode(pair[1]);
-			}
-			else {
-				value = null;
-			}
-			if (name in obj) {
-				if (!Array.isArray(obj[name])) {
-					// convert to an array, perserving currnent value
-					obj[name] = [obj[name]];
-				}
-				obj[name].push(value);
-			}
-			else {
-				obj[name] = value;
-			}
-		});
-		return obj;
-	},
-
-	write: function (obj) {
-		var str = '';
-		Object.keys(obj).forEach(function (name) {
-			str = append(str, name, obj[name]);
-		});
-		return str;
-	}
-
-};
-
-},{}],281:[function(require,module,exports){
-/*
- * Copyright 2014-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Michael Jackson
- */
-
-/* global FormData, File, Blob */
-
-'use strict';
-
-function isFormElement(object) {
-	return object &&
-		object.nodeType === 1 && // Node.ELEMENT_NODE
-		object.tagName === 'FORM';
-}
-
-function createFormDataFromObject(object) {
-	var formData = new FormData();
-
-	var value;
-	for (var property in object) {
-		if (object.hasOwnProperty(property)) {
-			value = object[property];
-
-			if (value instanceof File) {
-				formData.append(property, value, value.name);
-			} else if (value instanceof Blob) {
-				formData.append(property, value);
-			} else {
-				formData.append(property, String(value));
-			}
-		}
-	}
-
-	return formData;
-}
-
-module.exports = {
-
-	write: function (object) {
-		if (typeof FormData === 'undefined') {
-			throw new Error('The multipart/form-data mime serializer requires FormData support');
-		}
-
-		// Support FormData directly.
-		if (object instanceof FormData) {
-			return object;
-		}
-
-		// Support <form> elements.
-		if (isFormElement(object)) {
-			return new FormData(object);
-		}
-
-		// Support plain objects, may contain File/Blob as value.
-		if (typeof object === 'object' && object !== null) {
-			return createFormDataFromObject(object);
-		}
-
-		throw new Error('Unable to create FormData from object ' + object);
-	}
-
-};
-
-},{}],282:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-module.exports = {
-
-	read: function (str) {
-		return str;
-	},
-
-	write: function (obj) {
-		return obj.toString();
-	}
-
-};
-
-},{}],283:[function(require,module,exports){
-/*
- * Copyright 2015-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-/**
- * Attempt to invoke a function capturing the resulting value as a Promise
- *
- * If the method throws, the caught value used to reject the Promise.
- *
- * @param {function} work function to invoke
- * @returns {Promise} Promise for the output of the work function
- */
-function attempt(work) {
-	try {
-		return Promise.resolve(work());
-	}
-	catch (e) {
-		return Promise.reject(e);
-	}
-}
-
-module.exports = attempt;
-
-},{}],284:[function(require,module,exports){
-/*
- * Copyright (c) 2009 Nicholas C. Zakas. All rights reserved.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
-/*
- * Base 64 implementation in JavaScript
- * Original source available at https://raw.github.com/nzakas/computer-science-in-javascript/02a2745b4aa8214f2cae1bf0b15b447ca1a91b23/encodings/base64/base64.js
- *
- * Linter refinement by Scott Andrews
- */
-
-'use strict';
-
-/*jshint bitwise: false */
-
-var digits = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-
-/**
- * Base64-encodes a string of text.
- *
- * @param {string} text The text to encode.
- * @return {string} The base64-encoded string.
- */
-function base64Encode(text) {
-
-	if (/([^\u0000-\u00ff])/.test(text)) {
-		throw new Error('Can\'t base64 encode non-ASCII characters.');
-	}
-
-	var i = 0,
-		cur, prev, byteNum,
-		result = [];
-
-	while (i < text.length) {
-
-		cur = text.charCodeAt(i);
-		byteNum = i % 3;
-
-		switch (byteNum) {
-		case 0: //first byte
-			result.push(digits.charAt(cur >> 2));
-			break;
-
-		case 1: //second byte
-			result.push(digits.charAt((prev & 3) << 4 | (cur >> 4)));
-			break;
-
-		case 2: //third byte
-			result.push(digits.charAt((prev & 0x0f) << 2 | (cur >> 6)));
-			result.push(digits.charAt(cur & 0x3f));
-			break;
-		}
-
-		prev = cur;
-		i += 1;
-	}
-
-	if (byteNum === 0) {
-		result.push(digits.charAt((prev & 3) << 4));
-		result.push('==');
-	} else if (byteNum === 1) {
-		result.push(digits.charAt((prev & 0x0f) << 2));
-		result.push('=');
-	}
-
-	return result.join('');
-}
-
-/**
- * Base64-decodes a string of text.
- *
- * @param {string} text The text to decode.
- * @return {string} The base64-decoded string.
- */
-function base64Decode(text) {
-
-	//ignore white space
-	text = text.replace(/\s/g, '');
-
-	//first check for any unexpected input
-	if (!(/^[a-z0-9\+\/\s]+\={0,2}$/i.test(text)) || text.length % 4 > 0) {
-		throw new Error('Not a base64-encoded string.');
-	}
-
-	//local variables
-	var cur, prev, digitNum,
-		i = 0,
-		result = [];
-
-	//remove any equals signs
-	text = text.replace(/\=/g, '');
-
-	//loop over each character
-	while (i < text.length) {
-
-		cur = digits.indexOf(text.charAt(i));
-		digitNum = i % 4;
-
-		switch (digitNum) {
-
-		//case 0: first digit - do nothing, not enough info to work with
-
-		case 1: //second digit
-			result.push(String.fromCharCode(prev << 2 | cur >> 4));
-			break;
-
-		case 2: //third digit
-			result.push(String.fromCharCode((prev & 0x0f) << 4 | cur >> 2));
-			break;
-
-		case 3: //fourth digit
-			result.push(String.fromCharCode((prev & 3) << 6 | cur));
-			break;
-		}
-
-		prev = cur;
-		i += 1;
-	}
-
-	//return a string
-	return result.join('');
-
-}
-
-module.exports = {
-	encode: base64Encode,
-	decode: base64Decode
-};
-
-},{}],285:[function(require,module,exports){
-/*
- * Copyright 2013-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-module.exports = {
-
-	/**
-	 * Find objects within a graph the contain a property of a certain name.
-	 *
-	 * NOTE: this method will not discover object graph cycles.
-	 *
-	 * @param {*} obj object to search on
-	 * @param {string} prop name of the property to search for
-	 * @param {Function} callback function to receive the found properties and their parent
-	 */
-	findProperties: function findProperties(obj, prop, callback) {
-		if (typeof obj !== 'object' || obj === null) { return; }
-		if (prop in obj) {
-			callback(obj[prop], obj, prop);
-		}
-		Object.keys(obj).forEach(function (key) {
-			findProperties(obj[key], prop, callback);
-		});
-	}
-
-};
-
-},{}],286:[function(require,module,exports){
-/*
- * Copyright 2013-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var attempt = require('./attempt');
-
-/**
- * Create a promise whose work is started only when a handler is registered.
- *
- * The work function will be invoked at most once. Thrown values will result
- * in promise rejection.
- *
- * @param {Function} work function whose ouput is used to resolve the
- *   returned promise.
- * @returns {Promise} a lazy promise
- */
-function lazyPromise(work) {
-	var started, resolver, promise, then;
-
-	started = false;
-
-	promise = new Promise(function (resolve, reject) {
-		resolver = {
-			resolve: resolve,
-			reject: reject
-		};
-	});
-	then = promise.then;
-
-	promise.then = function () {
-		if (!started) {
-			started = true;
-			attempt(work).then(resolver.resolve, resolver.reject);
-		}
-		return then.apply(promise, arguments);
-	};
-
-	return promise;
-}
-
-module.exports = lazyPromise;
-
-},{"./attempt":283}],287:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var empty = {};
-
-/**
- * Mix the properties from the source object into the destination object.
- * When the same property occurs in more then one object, the right most
- * value wins.
- *
- * @param {Object} dest the object to copy properties to
- * @param {Object} sources the objects to copy properties from.  May be 1 to N arguments, but not an Array.
- * @return {Object} the destination object
- */
-function mixin(dest /*, sources... */) {
-	var i, l, source, name;
-
-	if (!dest) { dest = {}; }
-	for (i = 1, l = arguments.length; i < l; i += 1) {
-		source = arguments[i];
-		for (name in source) {
-			if (!(name in dest) || (dest[name] !== source[name] && (!(name in empty) || empty[name] !== source[name]))) {
-				dest[name] = source[name];
-			}
-		}
-	}
-
-	return dest; // Object
-}
-
-module.exports = mixin;
-
-},{}],288:[function(require,module,exports){
-/*
- * Copyright 2012-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-/**
- * Normalize HTTP header names using the pseudo camel case.
- *
- * For example:
- *   content-type         -> Content-Type
- *   accepts              -> Accepts
- *   x-custom-header-name -> X-Custom-Header-Name
- *
- * @param {string} name the raw header name
- * @return {string} the normalized header name
- */
-function normalizeHeaderName(name) {
-	return name.toLowerCase()
-		.split('-')
-		.map(function (chunk) { return chunk.charAt(0).toUpperCase() + chunk.slice(1); })
-		.join('-');
-}
-
-module.exports = normalizeHeaderName;
-
-},{}],289:[function(require,module,exports){
-/*
- * Copyright 2014-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-/*jshint latedef: nofunc */
-
-var normalizeHeaderName = require('./normalizeHeaderName');
-
-function property(promise, name) {
-	return promise.then(
-		function (value) {
-			return value && value[name];
-		},
-		function (value) {
-			return Promise.reject(value && value[name]);
-		}
-	);
-}
-
-/**
- * Obtain the response entity
- *
- * @returns {Promise} for the response entity
- */
-function entity() {
-	/*jshint validthis:true */
-	return property(this, 'entity');
-}
-
-/**
- * Obtain the response status
- *
- * @returns {Promise} for the response status
- */
-function status() {
-	/*jshint validthis:true */
-	return property(property(this, 'status'), 'code');
-}
-
-/**
- * Obtain the response headers map
- *
- * @returns {Promise} for the response headers map
- */
-function headers() {
-	/*jshint validthis:true */
-	return property(this, 'headers');
-}
-
-/**
- * Obtain a specific response header
- *
- * @param {String} headerName the header to retrieve
- * @returns {Promise} for the response header's value
- */
-function header(headerName) {
-	/*jshint validthis:true */
-	headerName = normalizeHeaderName(headerName);
-	return property(this.headers(), headerName);
-}
-
-/**
- * Follow a related resource
- *
- * The relationship to follow may be define as a plain string, an object
- * with the rel and params, or an array containing one or more entries
- * with the previous forms.
- *
- * Examples:
- *   response.follow('next')
- *
- *   response.follow({ rel: 'next', params: { pageSize: 100 } })
- *
- *   response.follow([
- *       { rel: 'items', params: { projection: 'noImages' } },
- *       'search',
- *       { rel: 'findByGalleryIsNull', params: { projection: 'noImages' } },
- *       'items'
- *   ])
- *
- * @param {String|Object|Array} rels one, or more, relationships to follow
- * @returns ResponsePromise<Response> related resource
- */
-function follow(rels) {
-	/*jshint validthis:true */
-	rels = [].concat(rels);
-
-	return make(rels.reduce(function (response, rel) {
-		return response.then(function (response) {
-			if (typeof rel === 'string') {
-				rel = { rel: rel };
-			}
-			if (typeof response.entity.clientFor !== 'function') {
-				throw new Error('Hypermedia response expected');
-			}
-			var client = response.entity.clientFor(rel.rel);
-			return client({ params: rel.params });
-		});
-	}, this));
-}
-
-/**
- * Wrap a Promise as an ResponsePromise
- *
- * @param {Promise<Response>} promise the promise for an HTTP Response
- * @returns {ResponsePromise<Response>} wrapped promise for Response with additional helper methods
- */
-function make(promise) {
-	promise.status = status;
-	promise.headers = headers;
-	promise.header = header;
-	promise.entity = entity;
-	promise.follow = follow;
-	return promise;
-}
-
-function responsePromise(obj, callback, errback) {
-	return make(Promise.resolve(obj).then(callback, errback));
-}
-
-responsePromise.make = make;
-responsePromise.reject = function (val) {
-	return make(Promise.reject(val));
-};
-responsePromise.promise = function (func) {
-	return make(new Promise(func));
-};
-
-module.exports = responsePromise;
-
-},{"./normalizeHeaderName":288}],290:[function(require,module,exports){
-/*
- * Copyright 2015-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var charMap;
-
-charMap = (function () {
-	var strings = {
-		alpha: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz',
-		digit: '0123456789'
-	};
-
-	strings.genDelims = ':/?#[]@';
-	strings.subDelims = '!$&\'()*+,;=';
-	strings.reserved = strings.genDelims + strings.subDelims;
-	strings.unreserved = strings.alpha + strings.digit + '-._~';
-	strings.url = strings.reserved + strings.unreserved;
-	strings.scheme = strings.alpha + strings.digit + '+-.';
-	strings.userinfo = strings.unreserved + strings.subDelims + ':';
-	strings.host = strings.unreserved + strings.subDelims;
-	strings.port = strings.digit;
-	strings.pchar = strings.unreserved + strings.subDelims + ':@';
-	strings.segment = strings.pchar;
-	strings.path = strings.segment + '/';
-	strings.query = strings.pchar + '/?';
-	strings.fragment = strings.pchar + '/?';
-
-	return Object.keys(strings).reduce(function (charMap, set) {
-		charMap[set] = strings[set].split('').reduce(function (chars, myChar) {
-			chars[myChar] = true;
-			return chars;
-		}, {});
-		return charMap;
-	}, {});
-}());
-
-function encode(str, allowed) {
-	if (typeof str !== 'string') {
-		throw new Error('String required for URL encoding');
-	}
-	return str.split('').map(function (myChar) {
-		if (allowed.hasOwnProperty(myChar)) {
-			return myChar;
-		}
-		var code = myChar.charCodeAt(0);
-		if (code <= 127) {
-			var encoded = code.toString(16).toUpperCase();
- 			return '%' + (encoded.length % 2 === 1 ? '0' : '') + encoded;
-		}
-		else {
-			return encodeURIComponent(myChar).toUpperCase();
-		}
-	}).join('');
-}
-
-function makeEncoder(allowed) {
-	allowed = allowed || charMap.unreserved;
-	return function (str) {
-		return encode(str, allowed);
-	};
-}
-
-function decode(str) {
-	return decodeURIComponent(str);
-}
-
-module.exports = {
-
-	/*
-	 * Decode URL encoded strings
-	 *
-	 * @param {string} URL encoded string
-	 * @returns {string} URL decoded string
-	 */
-	decode: decode,
-
-	/*
-	 * URL encode a string
-	 *
-	 * All but alpha-numerics and a very limited set of punctuation - . _ ~ are
-	 * encoded.
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encode: makeEncoder(),
-
-	/*
-	* URL encode a URL
-	*
-	* All character permitted anywhere in a URL are left unencoded even
-	* if that character is not permitted in that portion of a URL.
-	*
-	* Note: This method is typically not what you want.
-	*
-	* @param {string} string to encode
-	* @returns {string} URL encoded string
-	*/
-	encodeURL: makeEncoder(charMap.url),
-
-	/*
-	 * URL encode the scheme portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodeScheme: makeEncoder(charMap.scheme),
-
-	/*
-	 * URL encode the user info portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodeUserInfo: makeEncoder(charMap.userinfo),
-
-	/*
-	 * URL encode the host portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodeHost: makeEncoder(charMap.host),
-
-	/*
-	 * URL encode the port portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodePort: makeEncoder(charMap.port),
-
-	/*
-	 * URL encode a path segment portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodePathSegment: makeEncoder(charMap.segment),
-
-	/*
-	 * URL encode the path portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodePath: makeEncoder(charMap.path),
-
-	/*
-	 * URL encode the query portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodeQuery: makeEncoder(charMap.query),
-
-	/*
-	 * URL encode the fragment portion of a URL
-	 *
-	 * @param {string} string to encode
-	 * @returns {string} URL encoded string
-	 */
-	encodeFragment: makeEncoder(charMap.fragment)
-
-};
-
-},{}],291:[function(require,module,exports){
-/*
- * Copyright 2015-2016 the original author or authors
- * @license MIT, see LICENSE.txt for details
- *
- * @author Scott Andrews
- */
-
-'use strict';
-
-var uriEncoder, operations, prefixRE;
-
-uriEncoder = require('./uriEncoder');
-
-prefixRE = /^([^:]*):([0-9]+)$/;
-operations = {
-	'':  { first: '',  separator: ',', named: false, empty: '',  encoder: uriEncoder.encode },
-	'+': { first: '',  separator: ',', named: false, empty: '',  encoder: uriEncoder.encodeURL },
-	'#': { first: '#', separator: ',', named: false, empty: '',  encoder: uriEncoder.encodeURL },
-	'.': { first: '.', separator: '.', named: false, empty: '',  encoder: uriEncoder.encode },
-	'/': { first: '/', separator: '/', named: false, empty: '',  encoder: uriEncoder.encode },
-	';': { first: ';', separator: ';', named: true,  empty: '',  encoder: uriEncoder.encode },
-	'?': { first: '?', separator: '&', named: true,  empty: '=', encoder: uriEncoder.encode },
-	'&': { first: '&', separator: '&', named: true,  empty: '=', encoder: uriEncoder.encode },
-	'=': { reserved: true },
-	',': { reserved: true },
-	'!': { reserved: true },
-	'@': { reserved: true },
-	'|': { reserved: true }
-};
-
-function apply(operation, expression, params) {
-	/*jshint maxcomplexity:11 */
-	return expression.split(',').reduce(function (result, variable) {
-		var opts, value;
-
-		opts = {};
-		if (variable.slice(-1) === '*') {
-			variable = variable.slice(0, -1);
-			opts.explode = true;
-		}
-		if (prefixRE.test(variable)) {
-			var prefix = prefixRE.exec(variable);
-			variable = prefix[1];
-			opts.maxLength = parseInt(prefix[2]);
-		}
-
-		variable = uriEncoder.decode(variable);
-		value = params[variable];
-
-		if (value === void 0 || value === null) {
-			return result;
-		}
-		if (Array.isArray(value)) {
-			result = value.reduce(function (result, value) {
-				if (result.length) {
-					result += opts.explode ? operation.separator : ',';
-					if (operation.named && opts.explode) {
-						result += operation.encoder(variable);
-						result += value.length ? '=' : operation.empty;
-					}
-				}
-				else {
-					result += operation.first;
-					if (operation.named) {
-						result += operation.encoder(variable);
-						result += value.length ? '=' : operation.empty;
-					}
-				}
-				result += operation.encoder(value);
-				return result;
-			}, result);
-		}
-		else if (typeof value === 'object') {
-			result = Object.keys(value).reduce(function (result, name) {
-				if (result.length) {
-					result += opts.explode ? operation.separator : ',';
-				}
-				else {
-					result += operation.first;
-					if (operation.named && !opts.explode) {
-						result += operation.encoder(variable);
-						result += value[name].length ? '=' : operation.empty;
-					}
-				}
-				result += operation.encoder(name);
-				result += opts.explode ? '=' : ',';
-				result += operation.encoder(value[name]);
-				return result;
-			}, result);
-		}
-		else {
-			value = String(value);
-			if (opts.maxLength) {
-				value = value.slice(0, opts.maxLength);
-			}
-			result += result.length ? operation.separator : operation.first;
-			if (operation.named) {
-				result += operation.encoder(variable);
-				result += value.length ? '=' : operation.empty;
-			}
-			result += operation.encoder(value);
-		}
-
-		return result;
-	}, '');
-}
-
-function expandExpression(expression, params) {
-	var operation;
-
-	operation = operations[expression.slice(0,1)];
-	if (operation) {
-		expression = expression.slice(1);
-	}
-	else {
-		operation = operations[''];
-	}
-
-	if (operation.reserved) {
-		throw new Error('Reserved expression operations are not supported');
-	}
-
-	return apply(operation, expression, params);
-}
-
-function expandTemplate(template, params) {
-	var start, end, uri;
-
-	uri = '';
-	end = 0;
-	while (true) {
-		start = template.indexOf('{', end);
-		if (start === -1) {
-			// no more expressions
-			uri += template.slice(end);
-			break;
-		}
-		uri += template.slice(end, start);
-		end = template.indexOf('}', start) + 1;
-		uri += expandExpression(template.slice(start + 1, end - 1), params);
-	}
-
-	return uri;
-}
-
-module.exports = {
-
-	/**
-	 * Expand a URI Template with parameters to form a URI.
-	 *
-	 * Full implementation (level 4) of rfc6570.
-	 * @see https://tools.ietf.org/html/rfc6570
-	 *
-	 * @param {string} template URI template
-	 * @param {Object} [params] params to apply to the template durring expantion
-	 * @returns {string} expanded URI
-	 */
-	expand: expandTemplate
-
-};
-
-},{"./uriEncoder":290}],292:[function(require,module,exports){
-/* eslint-disable */
-/**
- * hat
- * written by James Halliday, licensed under MIT/X11
- * https://github.com/substack/node-hat
- */
-var hat = module.exports = function (bits, base) {
-    if (!base) base = 16;
-    if (bits === undefined) bits = 128;
-    if (bits <= 0) return '0';
-    
-    var digits = Math.log(Math.pow(2, bits)) / Math.log(base);
-    for (var i = 2; digits === Infinity; i *= 2) {
-        digits = Math.log(Math.pow(2, bits / i)) / Math.log(base) * i;
-    }
-    
-    var rem = digits - Math.floor(digits);
-    
-    var res = '';
-    
-    for (var i = 0; i < Math.floor(digits); i++) {
-        var x = Math.floor(Math.random() * base).toString(base);
-        res = x + res;
-    }
-    
-    if (rem) {
-        var b = Math.pow(base, rem);
-        var x = Math.floor(Math.random() * b).toString(base);
-        res = x + res;
-    }
-    
-    var parsed = parseInt(res, base);
-    if (parsed !== Infinity && parsed >= Math.pow(2, bits)) {
-        return hat(bits, base)
-    }
-    else return res;
-};
-
-},{}],293:[function(require,module,exports){
-(function (process){
-/**
- * Copyright 2013-2015, Facebook, Inc.
- * All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree. An additional grant
- * of patent rights can be found in the PATENTS file in the same directory.
- */
-
-'use strict';
-
-/**
- * Use invariant() to assert state which your program assumes to be true.
- *
- * Provide sprintf-style format (only %s is supported) and arguments
- * to provide information about what broke and what you were
- * expecting.
- *
- * The invariant message will be stripped in production, but the invariant
- * will remain to ensure logic does not differ in production.
- */
-
-var NODE_ENV = process.env.NODE_ENV;
-
-var invariant = function(condition, format, a, b, c, d, e, f) {
-  if (NODE_ENV !== 'production') {
-    if (format === undefined) {
-      throw new Error('invariant requires an error message argument');
-    }
-  }
-
-  if (!condition) {
-    var error;
-    if (format === undefined) {
-      error = new Error(
-        'Minified exception occurred; use the non-minified dev environment ' +
-        'for the full error message and additional helpful warnings.'
-      );
-    } else {
-      var args = [a, b, c, d, e, f];
-      var argIndex = 0;
-      error = new Error(
-        format.replace(/%s/g, function() { return args[argIndex++]; })
-      );
-      error.name = 'Invariant Violation';
-    }
-
-    error.framesToPop = 1; // we don't care about invariant's own frame
-    throw error;
-  }
-};
-
-module.exports = invariant;
-
-}).call(this,require('_process'))
-},{"_process":220}],294:[function(require,module,exports){
+},{"./data/team.js":257}],259:[function(require,module,exports){
 'use strict';
 
 var ohauth = require('ohauth'),
@@ -36240,7 +33090,7 @@ module.exports = function(o) {
     return oauth;
 };
 
-},{"ohauth":295,"store":297,"xtend":298}],295:[function(require,module,exports){
+},{"ohauth":260,"store":262,"xtend":263}],260:[function(require,module,exports){
 'use strict';
 
 var hashes = require('jshashes'),
@@ -36383,7 +33233,7 @@ ohauth.headerGenerator = function(options) {
 
 module.exports = ohauth;
 
-},{"jshashes":296,"xtend":298}],296:[function(require,module,exports){
+},{"jshashes":261,"xtend":263}],261:[function(require,module,exports){
 (function (global){
 /**
  * jshashes - https://github.com/h2non/jshashes
@@ -38152,7 +35002,7 @@ module.exports = ohauth;
 }()); // IIFE
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],297:[function(require,module,exports){
+},{}],262:[function(require,module,exports){
 (function (global){
 "use strict"
 // Module export pattern from
@@ -38347,9 +35197,9 @@ module.exports = ohauth;
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],298:[function(require,module,exports){
+},{}],263:[function(require,module,exports){
 arguments[4][255][0].apply(exports,arguments)
-},{"dup":255}],299:[function(require,module,exports){
+},{"dup":255}],264:[function(require,module,exports){
 var osmtogeojson = require('osmtogeojson'),
     request = require('request');
 
@@ -38380,7 +35230,7 @@ module.exports = function(query, cb, options) {
     });
 };
 
-},{"osmtogeojson":300,"request":307}],300:[function(require,module,exports){
+},{"osmtogeojson":265,"request":272}],265:[function(require,module,exports){
 var _ = require("./lodash.custom.js");
 var rewind = require("geojson-rewind");
 
@@ -39331,7 +36181,7 @@ osmtogeojson.toGeojson = osmtogeojson;
 
 module.exports = osmtogeojson;
 
-},{"./lodash.custom.js":301,"geojson-rewind":302,"osm-polygon-features":305}],301:[function(require,module,exports){
+},{"./lodash.custom.js":266,"geojson-rewind":267,"osm-polygon-features":270}],266:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -41129,7 +37979,7 @@ module.exports = osmtogeojson;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],302:[function(require,module,exports){
+},{}],267:[function(require,module,exports){
 var geojsonArea = require('geojson-area');
 
 module.exports = rewind;
@@ -41180,7 +38030,7 @@ function cw(_) {
     return geojsonArea.ring(_) >= 0;
 }
 
-},{"geojson-area":303}],303:[function(require,module,exports){
+},{"geojson-area":268}],268:[function(require,module,exports){
 var wgs84 = require('wgs84');
 
 module.exports.geometry = geometry;
@@ -41246,15 +38096,15 @@ function rad(_) {
     return _ * Math.PI / 180;
 }
 
-},{"wgs84":304}],304:[function(require,module,exports){
+},{"wgs84":269}],269:[function(require,module,exports){
 module.exports.RADIUS = 6378137;
 module.exports.FLATTENING = 1/298.257223563;
 module.exports.POLAR_RADIUS = 6356752.3142;
 
-},{}],305:[function(require,module,exports){
+},{}],270:[function(require,module,exports){
 module.exports = require('./polygon-features.json')
 
-},{"./polygon-features.json":306}],306:[function(require,module,exports){
+},{"./polygon-features.json":271}],271:[function(require,module,exports){
 module.exports=[
     {
         "key": "building",
@@ -41409,7 +38259,7 @@ module.exports=[
     }
 ]
 
-},{}],307:[function(require,module,exports){
+},{}],272:[function(require,module,exports){
 // Copyright 2010-2012 Mikeal Rogers
 //
 //    Licensed under the Apache License, Version 2.0 (the "License");
@@ -41568,7 +38418,7 @@ Object.defineProperty(request, 'debug', {
   }
 })
 
-},{"./lib/cookies":309,"./lib/helpers":312,"./request":439,"extend":335}],308:[function(require,module,exports){
+},{"./lib/cookies":274,"./lib/helpers":277,"./request":404,"extend":300}],273:[function(require,module,exports){
 'use strict'
 
 var caseless = require('caseless')
@@ -41738,7 +38588,7 @@ Auth.prototype.onResponse = function (response) {
 
 exports.Auth = Auth
 
-},{"./helpers":312,"caseless":332,"node-uuid":424}],309:[function(require,module,exports){
+},{"./helpers":277,"caseless":297,"node-uuid":389}],274:[function(require,module,exports){
 'use strict'
 
 var tough = require('tough-cookie')
@@ -41779,7 +38629,7 @@ exports.jar = function(store) {
   return new RequestJar(store)
 }
 
-},{"tough-cookie":431}],310:[function(require,module,exports){
+},{"tough-cookie":396}],275:[function(require,module,exports){
 (function (process){
 'use strict'
 
@@ -41862,7 +38712,7 @@ function getProxyFromURI(uri) {
 module.exports = getProxyFromURI
 
 }).call(this,require('_process'))
-},{"_process":220}],311:[function(require,module,exports){
+},{"_process":220}],276:[function(require,module,exports){
 'use strict'
 
 var fs = require('fs')
@@ -42079,7 +38929,7 @@ Har.prototype.options = function (options) {
 
 exports.Har = Har
 
-},{"extend":335,"fs":3,"har-validator":339,"querystring":224}],312:[function(require,module,exports){
+},{"extend":300,"fs":3,"har-validator":304,"querystring":224}],277:[function(require,module,exports){
 (function (process,Buffer){
 'use strict'
 
@@ -42157,7 +39007,7 @@ exports.version               = version
 exports.defer                 = deferMethod()
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":220,"buffer":19,"crypto":23,"json-stringify-safe":420}],313:[function(require,module,exports){
+},{"_process":220,"buffer":19,"crypto":23,"json-stringify-safe":385}],278:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 
@@ -42273,7 +39123,7 @@ Multipart.prototype.onRequest = function (options) {
 exports.Multipart = Multipart
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":19,"combined-stream":333,"isstream":419,"node-uuid":424}],314:[function(require,module,exports){
+},{"buffer":19,"combined-stream":298,"isstream":384,"node-uuid":389}],279:[function(require,module,exports){
 (function (Buffer){
 'use strict'
 
@@ -42424,7 +39274,7 @@ OAuth.prototype.onRequest = function (_oauth) {
 exports.OAuth = OAuth
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":19,"caseless":332,"crypto":23,"node-uuid":424,"oauth-sign":425,"qs":426,"url":249}],315:[function(require,module,exports){
+},{"buffer":19,"caseless":297,"crypto":23,"node-uuid":389,"oauth-sign":390,"qs":391,"url":249}],280:[function(require,module,exports){
 'use strict'
 
 var qs = require('qs')
@@ -42477,7 +39327,7 @@ Querystring.prototype.unescape = querystring.unescape
 
 exports.Querystring = Querystring
 
-},{"qs":426,"querystring":224}],316:[function(require,module,exports){
+},{"qs":391,"querystring":224}],281:[function(require,module,exports){
 'use strict'
 
 var url = require('url')
@@ -42632,7 +39482,7 @@ Redirect.prototype.onResponse = function (response) {
 
 exports.Redirect = Redirect
 
-},{"url":249}],317:[function(require,module,exports){
+},{"url":249}],282:[function(require,module,exports){
 'use strict'
 
 var url = require('url')
@@ -42810,7 +39660,7 @@ Tunnel.defaultProxyHeaderWhiteList = defaultProxyHeaderWhiteList
 Tunnel.defaultProxyHeaderExclusiveList = defaultProxyHeaderExclusiveList
 exports.Tunnel = Tunnel
 
-},{"tunnel-agent":438,"url":249}],318:[function(require,module,exports){
+},{"tunnel-agent":403,"url":249}],283:[function(require,module,exports){
 
 /*!
  *  Copyright 2010 LearnBoost <dev@learnboost.com>
@@ -43024,7 +39874,7 @@ function canonicalizeResource (resource) {
 }
 module.exports.canonicalizeResource = canonicalizeResource
 
-},{"crypto":23,"url":249}],319:[function(require,module,exports){
+},{"crypto":23,"url":249}],284:[function(require,module,exports){
 (function (process,Buffer){
 var aws4 = exports,
     url = require('url'),
@@ -43346,7 +40196,7 @@ aws4.sign = function(request, credentials) {
 }
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./lru":320,"_process":220,"buffer":19,"crypto":23,"querystring":224,"url":249}],320:[function(require,module,exports){
+},{"./lru":285,"_process":220,"buffer":19,"crypto":23,"querystring":224,"url":249}],285:[function(require,module,exports){
 module.exports = function(size) {
   return new LruCache(size)
 }
@@ -43444,7 +40294,7 @@ function DoublyLinkedNode(key, val) {
   this.next = null
 }
 
-},{}],321:[function(require,module,exports){
+},{}],286:[function(require,module,exports){
 (function (Buffer){
 var DuplexStream = require('readable-stream/duplex')
   , util         = require('util')
@@ -43691,11 +40541,11 @@ BufferList.prototype.destroy = function destroy () {
 module.exports = BufferList
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":19,"readable-stream/duplex":322,"util":252}],322:[function(require,module,exports){
+},{"buffer":19,"readable-stream/duplex":287,"util":252}],287:[function(require,module,exports){
 arguments[4][225][0].apply(exports,arguments)
-},{"./lib/_stream_duplex.js":323,"dup":225}],323:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":288,"dup":225}],288:[function(require,module,exports){
 arguments[4][226][0].apply(exports,arguments)
-},{"./_stream_readable":324,"./_stream_writable":325,"core-util-is":326,"dup":226,"inherits":327,"process-nextick-args":329}],324:[function(require,module,exports){
+},{"./_stream_readable":289,"./_stream_writable":290,"core-util-is":291,"dup":226,"inherits":292,"process-nextick-args":294}],289:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -44578,7 +41428,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'))
-},{"./_stream_duplex":323,"_process":220,"buffer":19,"core-util-is":326,"events":215,"inherits":327,"isarray":328,"process-nextick-args":329,"string_decoder/":330,"util":5}],325:[function(require,module,exports){
+},{"./_stream_duplex":288,"_process":220,"buffer":19,"core-util-is":291,"events":215,"inherits":292,"isarray":293,"process-nextick-args":294,"string_decoder/":295,"util":5}],290:[function(require,module,exports){
 (function (process){
 // A bit simpler than readable streams.
 // Implement an async ._write(chunk, encoding, cb), and it'll handle all
@@ -45097,7 +41947,7 @@ function CorkedRequest(state) {
   };
 }
 }).call(this,require('_process'))
-},{"./_stream_duplex":323,"_process":220,"buffer":19,"core-util-is":326,"events":215,"inherits":327,"process-nextick-args":329,"util-deprecate":331}],326:[function(require,module,exports){
+},{"./_stream_duplex":288,"_process":220,"buffer":19,"core-util-is":291,"events":215,"inherits":292,"process-nextick-args":294,"util-deprecate":296}],291:[function(require,module,exports){
 (function (Buffer){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -45208,17 +42058,17 @@ function objectToString(o) {
 }
 
 }).call(this,{"isBuffer":require("../../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218}],327:[function(require,module,exports){
+},{"../../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218}],292:[function(require,module,exports){
 arguments[4][217][0].apply(exports,arguments)
-},{"dup":217}],328:[function(require,module,exports){
+},{"dup":217}],293:[function(require,module,exports){
 arguments[4][22][0].apply(exports,arguments)
-},{"dup":22}],329:[function(require,module,exports){
+},{"dup":22}],294:[function(require,module,exports){
 arguments[4][235][0].apply(exports,arguments)
-},{"_process":220,"dup":235}],330:[function(require,module,exports){
+},{"_process":220,"dup":235}],295:[function(require,module,exports){
 arguments[4][248][0].apply(exports,arguments)
-},{"buffer":19,"dup":248}],331:[function(require,module,exports){
+},{"buffer":19,"dup":248}],296:[function(require,module,exports){
 arguments[4][236][0].apply(exports,arguments)
-},{"dup":236}],332:[function(require,module,exports){
+},{"dup":236}],297:[function(require,module,exports){
 function Caseless (dict) {
   this.dict = dict || {}
 }
@@ -45286,7 +42136,7 @@ module.exports.httpify = function (resp, headers) {
   return c
 }
 
-},{}],333:[function(require,module,exports){
+},{}],298:[function(require,module,exports){
 (function (Buffer){
 var util = require('util');
 var Stream = require('stream').Stream;
@@ -45478,7 +42328,7 @@ CombinedStream.prototype._emitError = function(err) {
 };
 
 }).call(this,{"isBuffer":require("../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"delayed-stream":334,"stream":241,"util":252}],334:[function(require,module,exports){
+},{"../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"delayed-stream":299,"stream":241,"util":252}],299:[function(require,module,exports){
 var Stream = require('stream').Stream;
 var util = require('util');
 
@@ -45587,7 +42437,7 @@ DelayedStream.prototype._checkIfMaxDataSizeExceeded = function() {
   this.emit('error', new Error(message));
 };
 
-},{"stream":241,"util":252}],335:[function(require,module,exports){
+},{"stream":241,"util":252}],300:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -45675,7 +42525,7 @@ module.exports = function extend() {
 };
 
 
-},{}],336:[function(require,module,exports){
+},{}],301:[function(require,module,exports){
 module.exports = ForeverAgent
 ForeverAgent.SSL = ForeverAgentSSL
 
@@ -45815,11 +42665,11 @@ function createConnectionSSL (port, host, options) {
   return tls.connect(options);
 }
 
-},{"http":242,"https":216,"net":3,"tls":3,"util":252}],337:[function(require,module,exports){
+},{"http":242,"https":216,"net":3,"tls":3,"util":252}],302:[function(require,module,exports){
 /* eslint-env browser */
 module.exports = FormData;
 
-},{}],338:[function(require,module,exports){
+},{}],303:[function(require,module,exports){
 'use strict'
 
 function ValidationError (errors) {
@@ -45831,7 +42681,7 @@ ValidationError.prototype = Error.prototype
 
 module.exports = ValidationError
 
-},{}],339:[function(require,module,exports){
+},{}],304:[function(require,module,exports){
 'use strict'
 
 var Promise = require('pinkie-promise')
@@ -45855,7 +42705,7 @@ Object.keys(schemas).map(function (name) {
   module.exports[name] = promisify(schemas[name])
 })
 
-},{"./runner":340,"./schemas":348,"pinkie-promise":364}],340:[function(require,module,exports){
+},{"./runner":305,"./schemas":313,"pinkie-promise":329}],305:[function(require,module,exports){
 'use strict'
 
 var schemas = require('./schemas')
@@ -45886,7 +42736,7 @@ module.exports = function (schema, data, cb) {
   return valid
 }
 
-},{"./error":338,"./schemas":348,"is-my-json-valid":358}],341:[function(require,module,exports){
+},{"./error":303,"./schemas":313,"is-my-json-valid":323}],306:[function(require,module,exports){
 module.exports={
   "properties": {
     "beforeRequest": {
@@ -45901,7 +42751,7 @@ module.exports={
   }
 }
 
-},{}],342:[function(require,module,exports){
+},{}],307:[function(require,module,exports){
 module.exports={
   "oneOf": [{
     "type": "object",
@@ -45934,7 +42784,7 @@ module.exports={
   }]
 }
 
-},{}],343:[function(require,module,exports){
+},{}],308:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -45963,7 +42813,7 @@ module.exports={
   }
 }
 
-},{}],344:[function(require,module,exports){
+},{}],309:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -45999,7 +42849,7 @@ module.exports={
   }
 }
 
-},{}],345:[function(require,module,exports){
+},{}],310:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -46019,7 +42869,7 @@ module.exports={
   }
 }
 
-},{}],346:[function(require,module,exports){
+},{}],311:[function(require,module,exports){
 module.exports={
   "type": "object",
   "optional": true,
@@ -46072,7 +42922,7 @@ module.exports={
   }
 }
 
-},{}],347:[function(require,module,exports){
+},{}],312:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -46085,7 +42935,7 @@ module.exports={
   }
 }
 
-},{}],348:[function(require,module,exports){
+},{}],313:[function(require,module,exports){
 'use strict'
 
 var schemas = {
@@ -46136,7 +42986,7 @@ schemas.har.properties.log = schemas.log
 
 module.exports = schemas
 
-},{"./cache.json":341,"./cacheEntry.json":342,"./content.json":343,"./cookie.json":344,"./creator.json":345,"./entry.json":346,"./har.json":347,"./log.json":349,"./page.json":350,"./pageTimings.json":351,"./postData.json":352,"./record.json":353,"./request.json":354,"./response.json":355,"./timings.json":356}],349:[function(require,module,exports){
+},{"./cache.json":306,"./cacheEntry.json":307,"./content.json":308,"./cookie.json":309,"./creator.json":310,"./entry.json":311,"./har.json":312,"./log.json":314,"./page.json":315,"./pageTimings.json":316,"./postData.json":317,"./record.json":318,"./request.json":319,"./response.json":320,"./timings.json":321}],314:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -46172,7 +43022,7 @@ module.exports={
   }
 }
 
-},{}],350:[function(require,module,exports){
+},{}],315:[function(require,module,exports){
 module.exports={
   "type": "object",
   "optional": true,
@@ -46204,7 +43054,7 @@ module.exports={
   }
 }
 
-},{}],351:[function(require,module,exports){
+},{}],316:[function(require,module,exports){
 module.exports={
   "type": "object",
   "properties": {
@@ -46222,7 +43072,7 @@ module.exports={
   }
 }
 
-},{}],352:[function(require,module,exports){
+},{}],317:[function(require,module,exports){
 module.exports={
   "type": "object",
   "optional": true,
@@ -46265,7 +43115,7 @@ module.exports={
   }
 }
 
-},{}],353:[function(require,module,exports){
+},{}],318:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -46285,7 +43135,7 @@ module.exports={
   }
 }
 
-},{}],354:[function(require,module,exports){
+},{}],319:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -46342,7 +43192,7 @@ module.exports={
   }
 }
 
-},{}],355:[function(require,module,exports){
+},{}],320:[function(require,module,exports){
 module.exports={
   "type": "object",
   "required": [
@@ -46396,7 +43246,7 @@ module.exports={
   }
 }
 
-},{}],356:[function(require,module,exports){
+},{}],321:[function(require,module,exports){
 module.exports={
   "required": [
     "send",
@@ -46438,7 +43288,7 @@ module.exports={
   }
 }
 
-},{}],357:[function(require,module,exports){
+},{}],322:[function(require,module,exports){
 exports['date-time'] = /^\d{4}-(?:0[0-9]{1}|1[0-2]{1})-[0-9]{2}[tT ]\d{2}:\d{2}:\d{2}(\.\d+)?([zZ]|[+-]\d{2}:\d{2})$/
 exports['date'] = /^\d{4}-(?:0[0-9]{1}|1[0-2]{1})-[0-9]{2}$/
 exports['time'] = /^\d{2}:\d{2}:\d{2}$/
@@ -46454,7 +43304,7 @@ exports['style'] = /\s*(.+?):\s*([^;]+);?/g
 exports['phone'] = /^\+(?:[0-9] ?){6,14}[0-9]$/
 exports['utc-millisec'] = /^[0-9]{1,15}\.?[0-9]{0,15}$/
 
-},{}],358:[function(require,module,exports){
+},{}],323:[function(require,module,exports){
 var genobj = require('generate-object-property')
 var genfun = require('generate-function')
 var jsonpointer = require('jsonpointer')
@@ -47040,7 +43890,7 @@ module.exports.filter = function(schema, opts) {
   }
 }
 
-},{"./formats":357,"generate-function":359,"generate-object-property":360,"jsonpointer":362,"xtend":363}],359:[function(require,module,exports){
+},{"./formats":322,"generate-function":324,"generate-object-property":325,"jsonpointer":327,"xtend":328}],324:[function(require,module,exports){
 var util = require('util')
 
 var INDENT_START = /[\{\[]/
@@ -47103,7 +43953,7 @@ module.exports = function() {
   return line
 }
 
-},{"util":252}],360:[function(require,module,exports){
+},{"util":252}],325:[function(require,module,exports){
 var isProperty = require('is-property')
 
 var gen = function(obj, prop) {
@@ -47117,13 +43967,13 @@ gen.property = function (prop) {
 
 module.exports = gen
 
-},{"is-property":361}],361:[function(require,module,exports){
+},{"is-property":326}],326:[function(require,module,exports){
 "use strict"
 function isProperty(str) {
   return /^[$A-Z\_a-z\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u08a0\u08a2-\u08ac\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19c1-\u19c7\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fcc\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790-\ua793\ua7a0-\ua7aa\ua7f8-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa80-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc][$A-Z\_a-z\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8-\u02c1\u02c6-\u02d1\u02e0-\u02e4\u02ec\u02ee\u0370-\u0374\u0376\u0377\u037a-\u037d\u0386\u0388-\u038a\u038c\u038e-\u03a1\u03a3-\u03f5\u03f7-\u0481\u048a-\u0527\u0531-\u0556\u0559\u0561-\u0587\u05d0-\u05ea\u05f0-\u05f2\u0620-\u064a\u066e\u066f\u0671-\u06d3\u06d5\u06e5\u06e6\u06ee\u06ef\u06fa-\u06fc\u06ff\u0710\u0712-\u072f\u074d-\u07a5\u07b1\u07ca-\u07ea\u07f4\u07f5\u07fa\u0800-\u0815\u081a\u0824\u0828\u0840-\u0858\u08a0\u08a2-\u08ac\u0904-\u0939\u093d\u0950\u0958-\u0961\u0971-\u0977\u0979-\u097f\u0985-\u098c\u098f\u0990\u0993-\u09a8\u09aa-\u09b0\u09b2\u09b6-\u09b9\u09bd\u09ce\u09dc\u09dd\u09df-\u09e1\u09f0\u09f1\u0a05-\u0a0a\u0a0f\u0a10\u0a13-\u0a28\u0a2a-\u0a30\u0a32\u0a33\u0a35\u0a36\u0a38\u0a39\u0a59-\u0a5c\u0a5e\u0a72-\u0a74\u0a85-\u0a8d\u0a8f-\u0a91\u0a93-\u0aa8\u0aaa-\u0ab0\u0ab2\u0ab3\u0ab5-\u0ab9\u0abd\u0ad0\u0ae0\u0ae1\u0b05-\u0b0c\u0b0f\u0b10\u0b13-\u0b28\u0b2a-\u0b30\u0b32\u0b33\u0b35-\u0b39\u0b3d\u0b5c\u0b5d\u0b5f-\u0b61\u0b71\u0b83\u0b85-\u0b8a\u0b8e-\u0b90\u0b92-\u0b95\u0b99\u0b9a\u0b9c\u0b9e\u0b9f\u0ba3\u0ba4\u0ba8-\u0baa\u0bae-\u0bb9\u0bd0\u0c05-\u0c0c\u0c0e-\u0c10\u0c12-\u0c28\u0c2a-\u0c33\u0c35-\u0c39\u0c3d\u0c58\u0c59\u0c60\u0c61\u0c85-\u0c8c\u0c8e-\u0c90\u0c92-\u0ca8\u0caa-\u0cb3\u0cb5-\u0cb9\u0cbd\u0cde\u0ce0\u0ce1\u0cf1\u0cf2\u0d05-\u0d0c\u0d0e-\u0d10\u0d12-\u0d3a\u0d3d\u0d4e\u0d60\u0d61\u0d7a-\u0d7f\u0d85-\u0d96\u0d9a-\u0db1\u0db3-\u0dbb\u0dbd\u0dc0-\u0dc6\u0e01-\u0e30\u0e32\u0e33\u0e40-\u0e46\u0e81\u0e82\u0e84\u0e87\u0e88\u0e8a\u0e8d\u0e94-\u0e97\u0e99-\u0e9f\u0ea1-\u0ea3\u0ea5\u0ea7\u0eaa\u0eab\u0ead-\u0eb0\u0eb2\u0eb3\u0ebd\u0ec0-\u0ec4\u0ec6\u0edc-\u0edf\u0f00\u0f40-\u0f47\u0f49-\u0f6c\u0f88-\u0f8c\u1000-\u102a\u103f\u1050-\u1055\u105a-\u105d\u1061\u1065\u1066\u106e-\u1070\u1075-\u1081\u108e\u10a0-\u10c5\u10c7\u10cd\u10d0-\u10fa\u10fc-\u1248\u124a-\u124d\u1250-\u1256\u1258\u125a-\u125d\u1260-\u1288\u128a-\u128d\u1290-\u12b0\u12b2-\u12b5\u12b8-\u12be\u12c0\u12c2-\u12c5\u12c8-\u12d6\u12d8-\u1310\u1312-\u1315\u1318-\u135a\u1380-\u138f\u13a0-\u13f4\u1401-\u166c\u166f-\u167f\u1681-\u169a\u16a0-\u16ea\u16ee-\u16f0\u1700-\u170c\u170e-\u1711\u1720-\u1731\u1740-\u1751\u1760-\u176c\u176e-\u1770\u1780-\u17b3\u17d7\u17dc\u1820-\u1877\u1880-\u18a8\u18aa\u18b0-\u18f5\u1900-\u191c\u1950-\u196d\u1970-\u1974\u1980-\u19ab\u19c1-\u19c7\u1a00-\u1a16\u1a20-\u1a54\u1aa7\u1b05-\u1b33\u1b45-\u1b4b\u1b83-\u1ba0\u1bae\u1baf\u1bba-\u1be5\u1c00-\u1c23\u1c4d-\u1c4f\u1c5a-\u1c7d\u1ce9-\u1cec\u1cee-\u1cf1\u1cf5\u1cf6\u1d00-\u1dbf\u1e00-\u1f15\u1f18-\u1f1d\u1f20-\u1f45\u1f48-\u1f4d\u1f50-\u1f57\u1f59\u1f5b\u1f5d\u1f5f-\u1f7d\u1f80-\u1fb4\u1fb6-\u1fbc\u1fbe\u1fc2-\u1fc4\u1fc6-\u1fcc\u1fd0-\u1fd3\u1fd6-\u1fdb\u1fe0-\u1fec\u1ff2-\u1ff4\u1ff6-\u1ffc\u2071\u207f\u2090-\u209c\u2102\u2107\u210a-\u2113\u2115\u2119-\u211d\u2124\u2126\u2128\u212a-\u212d\u212f-\u2139\u213c-\u213f\u2145-\u2149\u214e\u2160-\u2188\u2c00-\u2c2e\u2c30-\u2c5e\u2c60-\u2ce4\u2ceb-\u2cee\u2cf2\u2cf3\u2d00-\u2d25\u2d27\u2d2d\u2d30-\u2d67\u2d6f\u2d80-\u2d96\u2da0-\u2da6\u2da8-\u2dae\u2db0-\u2db6\u2db8-\u2dbe\u2dc0-\u2dc6\u2dc8-\u2dce\u2dd0-\u2dd6\u2dd8-\u2dde\u2e2f\u3005-\u3007\u3021-\u3029\u3031-\u3035\u3038-\u303c\u3041-\u3096\u309d-\u309f\u30a1-\u30fa\u30fc-\u30ff\u3105-\u312d\u3131-\u318e\u31a0-\u31ba\u31f0-\u31ff\u3400-\u4db5\u4e00-\u9fcc\ua000-\ua48c\ua4d0-\ua4fd\ua500-\ua60c\ua610-\ua61f\ua62a\ua62b\ua640-\ua66e\ua67f-\ua697\ua6a0-\ua6ef\ua717-\ua71f\ua722-\ua788\ua78b-\ua78e\ua790-\ua793\ua7a0-\ua7aa\ua7f8-\ua801\ua803-\ua805\ua807-\ua80a\ua80c-\ua822\ua840-\ua873\ua882-\ua8b3\ua8f2-\ua8f7\ua8fb\ua90a-\ua925\ua930-\ua946\ua960-\ua97c\ua984-\ua9b2\ua9cf\uaa00-\uaa28\uaa40-\uaa42\uaa44-\uaa4b\uaa60-\uaa76\uaa7a\uaa80-\uaaaf\uaab1\uaab5\uaab6\uaab9-\uaabd\uaac0\uaac2\uaadb-\uaadd\uaae0-\uaaea\uaaf2-\uaaf4\uab01-\uab06\uab09-\uab0e\uab11-\uab16\uab20-\uab26\uab28-\uab2e\uabc0-\uabe2\uac00-\ud7a3\ud7b0-\ud7c6\ud7cb-\ud7fb\uf900-\ufa6d\ufa70-\ufad9\ufb00-\ufb06\ufb13-\ufb17\ufb1d\ufb1f-\ufb28\ufb2a-\ufb36\ufb38-\ufb3c\ufb3e\ufb40\ufb41\ufb43\ufb44\ufb46-\ufbb1\ufbd3-\ufd3d\ufd50-\ufd8f\ufd92-\ufdc7\ufdf0-\ufdfb\ufe70-\ufe74\ufe76-\ufefc\uff21-\uff3a\uff41-\uff5a\uff66-\uffbe\uffc2-\uffc7\uffca-\uffcf\uffd2-\uffd7\uffda-\uffdc0-9\u0300-\u036f\u0483-\u0487\u0591-\u05bd\u05bf\u05c1\u05c2\u05c4\u05c5\u05c7\u0610-\u061a\u064b-\u0669\u0670\u06d6-\u06dc\u06df-\u06e4\u06e7\u06e8\u06ea-\u06ed\u06f0-\u06f9\u0711\u0730-\u074a\u07a6-\u07b0\u07c0-\u07c9\u07eb-\u07f3\u0816-\u0819\u081b-\u0823\u0825-\u0827\u0829-\u082d\u0859-\u085b\u08e4-\u08fe\u0900-\u0903\u093a-\u093c\u093e-\u094f\u0951-\u0957\u0962\u0963\u0966-\u096f\u0981-\u0983\u09bc\u09be-\u09c4\u09c7\u09c8\u09cb-\u09cd\u09d7\u09e2\u09e3\u09e6-\u09ef\u0a01-\u0a03\u0a3c\u0a3e-\u0a42\u0a47\u0a48\u0a4b-\u0a4d\u0a51\u0a66-\u0a71\u0a75\u0a81-\u0a83\u0abc\u0abe-\u0ac5\u0ac7-\u0ac9\u0acb-\u0acd\u0ae2\u0ae3\u0ae6-\u0aef\u0b01-\u0b03\u0b3c\u0b3e-\u0b44\u0b47\u0b48\u0b4b-\u0b4d\u0b56\u0b57\u0b62\u0b63\u0b66-\u0b6f\u0b82\u0bbe-\u0bc2\u0bc6-\u0bc8\u0bca-\u0bcd\u0bd7\u0be6-\u0bef\u0c01-\u0c03\u0c3e-\u0c44\u0c46-\u0c48\u0c4a-\u0c4d\u0c55\u0c56\u0c62\u0c63\u0c66-\u0c6f\u0c82\u0c83\u0cbc\u0cbe-\u0cc4\u0cc6-\u0cc8\u0cca-\u0ccd\u0cd5\u0cd6\u0ce2\u0ce3\u0ce6-\u0cef\u0d02\u0d03\u0d3e-\u0d44\u0d46-\u0d48\u0d4a-\u0d4d\u0d57\u0d62\u0d63\u0d66-\u0d6f\u0d82\u0d83\u0dca\u0dcf-\u0dd4\u0dd6\u0dd8-\u0ddf\u0df2\u0df3\u0e31\u0e34-\u0e3a\u0e47-\u0e4e\u0e50-\u0e59\u0eb1\u0eb4-\u0eb9\u0ebb\u0ebc\u0ec8-\u0ecd\u0ed0-\u0ed9\u0f18\u0f19\u0f20-\u0f29\u0f35\u0f37\u0f39\u0f3e\u0f3f\u0f71-\u0f84\u0f86\u0f87\u0f8d-\u0f97\u0f99-\u0fbc\u0fc6\u102b-\u103e\u1040-\u1049\u1056-\u1059\u105e-\u1060\u1062-\u1064\u1067-\u106d\u1071-\u1074\u1082-\u108d\u108f-\u109d\u135d-\u135f\u1712-\u1714\u1732-\u1734\u1752\u1753\u1772\u1773\u17b4-\u17d3\u17dd\u17e0-\u17e9\u180b-\u180d\u1810-\u1819\u18a9\u1920-\u192b\u1930-\u193b\u1946-\u194f\u19b0-\u19c0\u19c8\u19c9\u19d0-\u19d9\u1a17-\u1a1b\u1a55-\u1a5e\u1a60-\u1a7c\u1a7f-\u1a89\u1a90-\u1a99\u1b00-\u1b04\u1b34-\u1b44\u1b50-\u1b59\u1b6b-\u1b73\u1b80-\u1b82\u1ba1-\u1bad\u1bb0-\u1bb9\u1be6-\u1bf3\u1c24-\u1c37\u1c40-\u1c49\u1c50-\u1c59\u1cd0-\u1cd2\u1cd4-\u1ce8\u1ced\u1cf2-\u1cf4\u1dc0-\u1de6\u1dfc-\u1dff\u200c\u200d\u203f\u2040\u2054\u20d0-\u20dc\u20e1\u20e5-\u20f0\u2cef-\u2cf1\u2d7f\u2de0-\u2dff\u302a-\u302f\u3099\u309a\ua620-\ua629\ua66f\ua674-\ua67d\ua69f\ua6f0\ua6f1\ua802\ua806\ua80b\ua823-\ua827\ua880\ua881\ua8b4-\ua8c4\ua8d0-\ua8d9\ua8e0-\ua8f1\ua900-\ua909\ua926-\ua92d\ua947-\ua953\ua980-\ua983\ua9b3-\ua9c0\ua9d0-\ua9d9\uaa29-\uaa36\uaa43\uaa4c\uaa4d\uaa50-\uaa59\uaa7b\uaab0\uaab2-\uaab4\uaab7\uaab8\uaabe\uaabf\uaac1\uaaeb-\uaaef\uaaf5\uaaf6\uabe3-\uabea\uabec\uabed\uabf0-\uabf9\ufb1e\ufe00-\ufe0f\ufe20-\ufe26\ufe33\ufe34\ufe4d-\ufe4f\uff10-\uff19\uff3f]*$/.test(str)
 }
 module.exports = isProperty
-},{}],362:[function(require,module,exports){
+},{}],327:[function(require,module,exports){
 var untilde = function(str) {
   return str.replace(/~./g, function(m) {
     switch (m) {
@@ -47201,14 +44051,14 @@ var set = function(obj, pointer, value) {
 exports.get = get
 exports.set = set
 
-},{}],363:[function(require,module,exports){
+},{}],328:[function(require,module,exports){
 arguments[4][255][0].apply(exports,arguments)
-},{"dup":255}],364:[function(require,module,exports){
+},{"dup":255}],329:[function(require,module,exports){
 'use strict';
 
 module.exports = typeof Promise === 'function' ? Promise : require('pinkie');
 
-},{"pinkie":365}],365:[function(require,module,exports){
+},{"pinkie":330}],330:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -47504,7 +44354,7 @@ Promise.reject = function (reason) {
 module.exports = Promise;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],366:[function(require,module,exports){
+},{}],331:[function(require,module,exports){
 /*
     HTTP Hawk Authentication Scheme
     Copyright (c) 2012-2014, Eran Hammer <eran@hammer.io>
@@ -48143,7 +44993,7 @@ if (typeof module !== 'undefined' && module.exports) {
 /* eslint-enable */
 // $lab:coverage:on$
 
-},{}],367:[function(require,module,exports){
+},{}],332:[function(require,module,exports){
 // Copyright 2015 Joyent, Inc.
 
 var parser = require('./parser');
@@ -48174,7 +45024,7 @@ module.exports = {
   verifyHMAC: verify.verifyHMAC
 };
 
-},{"./parser":368,"./signer":369,"./utils":370,"./verify":371}],368:[function(require,module,exports){
+},{"./parser":333,"./signer":334,"./utils":335,"./verify":336}],333:[function(require,module,exports){
 // Copyright 2012 Joyent, Inc.  All rights reserved.
 
 var assert = require('assert-plus');
@@ -48494,7 +45344,7 @@ module.exports = {
 
 };
 
-},{"./utils":370,"assert-plus":372,"util":252}],369:[function(require,module,exports){
+},{"./utils":335,"assert-plus":337,"util":252}],334:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2012 Joyent, Inc.  All rights reserved.
 
@@ -48897,7 +45747,7 @@ module.exports = {
 };
 
 }).call(this,{"isBuffer":require("../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"./utils":370,"assert-plus":372,"crypto":23,"http":242,"jsprim":373,"sshpk":394,"util":252}],370:[function(require,module,exports){
+},{"../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"./utils":335,"assert-plus":337,"crypto":23,"http":242,"jsprim":338,"sshpk":359,"util":252}],335:[function(require,module,exports){
 // Copyright 2012 Joyent, Inc.  All rights reserved.
 
 var assert = require('assert-plus');
@@ -49011,7 +45861,7 @@ module.exports = {
   }
 };
 
-},{"assert-plus":372,"sshpk":394,"util":252}],371:[function(require,module,exports){
+},{"assert-plus":337,"sshpk":359,"util":252}],336:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -49103,7 +45953,7 @@ module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./utils":370,"assert-plus":372,"buffer":19,"crypto":23,"sshpk":394}],372:[function(require,module,exports){
+},{"./utils":335,"assert-plus":337,"buffer":19,"crypto":23,"sshpk":359}],337:[function(require,module,exports){
 (function (Buffer,process){
 // Copyright (c) 2012, Mark Cavage. All rights reserved.
 // Copyright 2015 Joyent, Inc.
@@ -49313,7 +46163,7 @@ function _setExports(ndebug) {
 module.exports = _setExports(process.env.NODE_NDEBUG);
 
 }).call(this,{"isBuffer":require("../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")},require('_process'))
-},{"../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"_process":220,"assert":4,"stream":241,"util":252}],373:[function(require,module,exports){
+},{"../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"_process":220,"assert":4,"stream":241,"util":252}],338:[function(require,module,exports){
 /*
  * lib/jsprim.js: utilities for primitive JavaScript types
  */
@@ -49803,7 +46653,7 @@ function mergeObjects(provided, overrides, defaults)
 	return (rv);
 }
 
-},{"assert":4,"extsprintf":374,"json-schema":375,"util":252,"verror":376}],374:[function(require,module,exports){
+},{"assert":4,"extsprintf":339,"json-schema":340,"util":252,"verror":341}],339:[function(require,module,exports){
 /*
  * extsprintf.js: extended POSIX-style sprintf
  */
@@ -49971,7 +46821,7 @@ function dumpException(ex)
 	return (ret);
 }
 
-},{"assert":4,"util":252}],375:[function(require,module,exports){
+},{"assert":4,"util":252}],340:[function(require,module,exports){
 /**
  * JSONSchema Validator - Validates JavaScript objects using JSON Schemas
  *	(http://www.json.com/json-schema-proposal/)
@@ -50233,7 +47083,7 @@ exports.mustBeValid = function(result){
 return exports;
 });
 
-},{}],376:[function(require,module,exports){
+},{}],341:[function(require,module,exports){
 /*
  * verror.js: richer JavaScript errors
  */
@@ -50392,7 +47242,7 @@ WError.prototype.cause = function we_cause(c)
 	return (this.we_cause);
 };
 
-},{"assert":4,"extsprintf":374,"util":252}],377:[function(require,module,exports){
+},{"assert":4,"extsprintf":339,"util":252}],342:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -50564,7 +47414,7 @@ module.exports = {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":19}],378:[function(require,module,exports){
+},{"buffer":19}],343:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2016 Joyent, Inc.
 
@@ -50859,7 +47709,7 @@ Certificate._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":377,"./errors":381,"./fingerprint":382,"./formats/openssh-cert":384,"./formats/x509":392,"./formats/x509-pem":391,"./identity":393,"./key":395,"./private-key":396,"./signature":397,"./utils":399,"assert-plus":406,"buffer":19,"crypto":23,"util":252}],379:[function(require,module,exports){
+},{"./algs":342,"./errors":346,"./fingerprint":347,"./formats/openssh-cert":349,"./formats/x509":357,"./formats/x509-pem":356,"./identity":358,"./key":360,"./private-key":361,"./signature":362,"./utils":364,"assert-plus":371,"buffer":19,"crypto":23,"util":252}],344:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -51174,7 +48024,7 @@ ECPrivate.prototype.deriveSharedSecret = function (pubKey) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":377,"./key":395,"./private-key":396,"./utils":399,"assert-plus":406,"buffer":19,"crypto":23,"ecc-jsbn":407,"ecc-jsbn/lib/ec":408,"jodid25519":410,"jsbn":416}],380:[function(require,module,exports){
+},{"./algs":342,"./key":360,"./private-key":361,"./utils":364,"assert-plus":371,"buffer":19,"crypto":23,"ecc-jsbn":372,"ecc-jsbn/lib/ec":373,"jodid25519":375,"jsbn":381}],345:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -51274,7 +48124,7 @@ Signer.prototype.sign = function () {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./signature":397,"assert-plus":406,"buffer":19,"stream":241,"tweetnacl":417,"util":252}],381:[function(require,module,exports){
+},{"./signature":362,"assert-plus":371,"buffer":19,"stream":241,"tweetnacl":382,"util":252}],346:[function(require,module,exports){
 // Copyright 2015 Joyent, Inc.
 
 var assert = require('assert-plus');
@@ -51360,7 +48210,7 @@ module.exports = {
 	CertificateParseError: CertificateParseError
 };
 
-},{"assert-plus":406,"util":252}],382:[function(require,module,exports){
+},{"assert-plus":371,"util":252}],347:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -51525,7 +48375,7 @@ Fingerprint._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":377,"./certificate":378,"./errors":381,"./key":395,"./utils":399,"assert-plus":406,"buffer":19,"crypto":23}],383:[function(require,module,exports){
+},{"./algs":342,"./certificate":343,"./errors":346,"./key":360,"./utils":364,"assert-plus":371,"buffer":19,"crypto":23}],348:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -51602,7 +48452,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../key":395,"../private-key":396,"../utils":399,"./pem":385,"./rfc4253":388,"./ssh":390,"assert-plus":406,"buffer":19}],384:[function(require,module,exports){
+},{"../key":360,"../private-key":361,"../utils":364,"./pem":350,"./rfc4253":353,"./ssh":355,"assert-plus":371,"buffer":19}],349:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2016 Joyent, Inc.
 
@@ -51895,7 +48745,7 @@ function getCertType(key) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../certificate":378,"../identity":393,"../key":395,"../private-key":396,"../signature":397,"../ssh-buffer":398,"../utils":399,"./rfc4253":388,"assert-plus":406,"buffer":19,"crypto":23}],385:[function(require,module,exports){
+},{"../algs":342,"../certificate":343,"../identity":358,"../key":360,"../private-key":361,"../signature":362,"../ssh-buffer":363,"../utils":364,"./rfc4253":353,"assert-plus":371,"buffer":19,"crypto":23}],350:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -52085,7 +48935,7 @@ function write(key, options, type) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../errors":381,"../key":395,"../private-key":396,"../utils":399,"./pkcs1":386,"./pkcs8":387,"./rfc4253":388,"./ssh-private":389,"asn1":405,"assert-plus":406,"buffer":19,"crypto":23}],386:[function(require,module,exports){
+},{"../algs":342,"../errors":346,"../key":360,"../private-key":361,"../utils":364,"./pkcs1":351,"./pkcs8":352,"./rfc4253":353,"./ssh-private":354,"asn1":370,"assert-plus":371,"buffer":19,"crypto":23}],351:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -52409,7 +49259,7 @@ function writePkcs1ECDSAPrivate(der, key) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../key":395,"../private-key":396,"../utils":399,"./pem":385,"./pkcs8":387,"asn1":405,"assert-plus":406,"buffer":19}],387:[function(require,module,exports){
+},{"../algs":342,"../key":360,"../private-key":361,"../utils":364,"./pem":350,"./pkcs8":352,"asn1":370,"assert-plus":371,"buffer":19}],352:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -52918,7 +49768,7 @@ function writePkcs8ECDSAPrivate(key, der) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../key":395,"../private-key":396,"../utils":399,"./pem":385,"asn1":405,"assert-plus":406,"buffer":19}],388:[function(require,module,exports){
+},{"../algs":342,"../key":360,"../private-key":361,"../utils":364,"./pem":350,"asn1":370,"assert-plus":371,"buffer":19}],353:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -53068,7 +49918,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../key":395,"../private-key":396,"../ssh-buffer":398,"../utils":399,"assert-plus":406,"buffer":19}],389:[function(require,module,exports){
+},{"../algs":342,"../key":360,"../private-key":361,"../ssh-buffer":363,"../utils":364,"assert-plus":371,"buffer":19}],354:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -53210,7 +50060,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../key":395,"../private-key":396,"../ssh-buffer":398,"../utils":399,"./pem":385,"./rfc4253":388,"asn1":405,"assert-plus":406,"buffer":19,"crypto":23}],390:[function(require,module,exports){
+},{"../algs":342,"../key":360,"../private-key":361,"../ssh-buffer":363,"../utils":364,"./pem":350,"./rfc4253":353,"asn1":370,"assert-plus":371,"buffer":19,"crypto":23}],355:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -53328,7 +50178,7 @@ function write(key, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../key":395,"../private-key":396,"../utils":399,"./rfc4253":388,"./ssh-private":389,"assert-plus":406,"buffer":19}],391:[function(require,module,exports){
+},{"../key":360,"../private-key":361,"../utils":364,"./rfc4253":353,"./ssh-private":354,"assert-plus":371,"buffer":19}],356:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2016 Joyent, Inc.
 
@@ -53409,7 +50259,7 @@ function write(cert, options) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../certificate":378,"../identity":393,"../key":395,"../private-key":396,"../signature":397,"../utils":399,"./pem":385,"./x509":392,"asn1":405,"assert-plus":406,"buffer":19}],392:[function(require,module,exports){
+},{"../algs":342,"../certificate":343,"../identity":358,"../key":360,"../private-key":361,"../signature":362,"../utils":364,"./pem":350,"./x509":357,"asn1":370,"assert-plus":371,"buffer":19}],357:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2016 Joyent, Inc.
 
@@ -53897,7 +50747,7 @@ function writeTBSCert(cert, der) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"../algs":377,"../certificate":378,"../identity":393,"../key":395,"../private-key":396,"../signature":397,"../utils":399,"./pem":385,"./pkcs8":387,"asn1":405,"assert-plus":406,"buffer":19}],393:[function(require,module,exports){
+},{"../algs":342,"../certificate":343,"../identity":358,"../key":360,"../private-key":361,"../signature":362,"../utils":364,"./pem":350,"./pkcs8":352,"asn1":370,"assert-plus":371,"buffer":19}],358:[function(require,module,exports){
 // Copyright 2016 Joyent, Inc.
 
 module.exports = Identity;
@@ -54154,7 +51004,7 @@ Identity._oldVersionDetect = function (obj) {
 	return ([1, 0]);
 };
 
-},{"./algs":377,"./errors":381,"./fingerprint":382,"./signature":397,"./utils":399,"asn1":405,"assert-plus":406,"crypto":23,"util":252}],394:[function(require,module,exports){
+},{"./algs":342,"./errors":346,"./fingerprint":347,"./signature":362,"./utils":364,"asn1":370,"assert-plus":371,"crypto":23,"util":252}],359:[function(require,module,exports){
 // Copyright 2015 Joyent, Inc.
 
 var Key = require('./key');
@@ -54194,7 +51044,7 @@ module.exports = {
 	CertificateParseError: errs.CertificateParseError
 };
 
-},{"./certificate":378,"./errors":381,"./fingerprint":382,"./identity":393,"./key":395,"./private-key":396,"./signature":397}],395:[function(require,module,exports){
+},{"./certificate":343,"./errors":346,"./fingerprint":347,"./identity":358,"./key":360,"./private-key":361,"./signature":362}],360:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -54468,7 +51318,7 @@ Key._oldVersionDetect = function (obj) {
 };
 
 }).call(this,{"isBuffer":require("../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"./algs":377,"./dhe":379,"./ed-compat":380,"./errors":381,"./fingerprint":382,"./formats/auto":383,"./formats/pem":385,"./formats/pkcs1":386,"./formats/pkcs8":387,"./formats/rfc4253":388,"./formats/ssh":390,"./formats/ssh-private":389,"./private-key":396,"./signature":397,"./utils":399,"assert-plus":406,"crypto":23}],396:[function(require,module,exports){
+},{"../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"./algs":342,"./dhe":344,"./ed-compat":345,"./errors":346,"./fingerprint":347,"./formats/auto":348,"./formats/pem":350,"./formats/pkcs1":351,"./formats/pkcs8":352,"./formats/rfc4253":353,"./formats/ssh":355,"./formats/ssh-private":354,"./private-key":361,"./signature":362,"./utils":364,"assert-plus":371,"crypto":23}],361:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -54703,7 +51553,7 @@ PrivateKey._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":377,"./ed-compat":380,"./errors":381,"./fingerprint":382,"./formats/auto":383,"./formats/pem":385,"./formats/pkcs1":386,"./formats/pkcs8":387,"./formats/rfc4253":388,"./formats/ssh-private":389,"./key":395,"./signature":397,"./utils":399,"assert-plus":406,"buffer":19,"crypto":23,"jodid25519":410,"util":252}],397:[function(require,module,exports){
+},{"./algs":342,"./ed-compat":345,"./errors":346,"./fingerprint":347,"./formats/auto":348,"./formats/pem":350,"./formats/pkcs1":351,"./formats/pkcs8":352,"./formats/rfc4253":353,"./formats/ssh-private":354,"./key":360,"./signature":362,"./utils":364,"assert-plus":371,"buffer":19,"crypto":23,"jodid25519":375,"util":252}],362:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -54952,7 +51802,7 @@ Signature._oldVersionDetect = function (obj) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"./algs":377,"./errors":381,"./ssh-buffer":398,"./utils":399,"asn1":405,"assert-plus":406,"buffer":19,"crypto":23}],398:[function(require,module,exports){
+},{"./algs":342,"./errors":346,"./ssh-buffer":363,"./utils":364,"asn1":370,"assert-plus":371,"buffer":19,"crypto":23}],363:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -55104,7 +51954,7 @@ SSHBuffer.prototype.write = function (buf) {
 };
 
 }).call(this,require("buffer").Buffer)
-},{"assert-plus":406,"buffer":19}],399:[function(require,module,exports){
+},{"assert-plus":371,"buffer":19}],364:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2015 Joyent, Inc.
 
@@ -55354,7 +52204,7 @@ function addRSAMissing(key) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"./private-key":396,"assert-plus":406,"buffer":19,"crypto":23,"jsbn":416}],400:[function(require,module,exports){
+},{"./private-key":361,"assert-plus":371,"buffer":19,"crypto":23,"jsbn":381}],365:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 
@@ -55369,7 +52219,7 @@ module.exports = {
 
 };
 
-},{}],401:[function(require,module,exports){
+},{}],366:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 var errors = require('./errors');
@@ -55398,7 +52248,7 @@ for (var e in errors) {
     module.exports[e] = errors[e];
 }
 
-},{"./errors":400,"./reader":402,"./types":403,"./writer":404}],402:[function(require,module,exports){
+},{"./errors":365,"./reader":367,"./types":368,"./writer":369}],367:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
@@ -55663,7 +52513,7 @@ Reader.prototype._readTag = function(tag) {
 module.exports = Reader;
 
 }).call(this,require("buffer").Buffer)
-},{"./errors":400,"./types":403,"assert":4,"buffer":19}],403:[function(require,module,exports){
+},{"./errors":365,"./types":368,"assert":4,"buffer":19}],368:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 
@@ -55701,7 +52551,7 @@ module.exports = {
   Context: 128
 };
 
-},{}],404:[function(require,module,exports){
+},{}],369:[function(require,module,exports){
 (function (Buffer){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
@@ -56021,7 +52871,7 @@ Writer.prototype._ensure = function(len) {
 module.exports = Writer;
 
 }).call(this,require("buffer").Buffer)
-},{"./errors":400,"./types":403,"assert":4,"buffer":19}],405:[function(require,module,exports){
+},{"./errors":365,"./types":368,"assert":4,"buffer":19}],370:[function(require,module,exports){
 // Copyright 2011 Mark Cavage <mcavage@gmail.com> All rights reserved.
 
 // If you have no idea what ASN.1 or BER is, see this:
@@ -56043,7 +52893,7 @@ module.exports = {
 
 };
 
-},{"./ber/index":401}],406:[function(require,module,exports){
+},{"./ber/index":366}],371:[function(require,module,exports){
 (function (Buffer,process){
 // Copyright (c) 2012, Mark Cavage. All rights reserved.
 // Copyright 2015 Joyent, Inc.
@@ -56258,7 +53108,7 @@ function _setExports(ndebug) {
 module.exports = _setExports(process.env.NODE_NDEBUG);
 
 }).call(this,{"isBuffer":require("../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")},require('_process'))
-},{"../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"_process":220,"assert":4,"stream":241,"util":252}],407:[function(require,module,exports){
+},{"../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"_process":220,"assert":4,"stream":241,"util":252}],372:[function(require,module,exports){
 (function (Buffer){
 var crypto = require("crypto");
 var BigInteger = require("jsbn").BigInteger;
@@ -56319,7 +53169,7 @@ exports.ECKey = function(curve, key, isPublic)
 
 
 }).call(this,require("buffer").Buffer)
-},{"./lib/ec.js":408,"./lib/sec.js":409,"buffer":19,"crypto":23,"jsbn":416}],408:[function(require,module,exports){
+},{"./lib/ec.js":373,"./lib/sec.js":374,"buffer":19,"crypto":23,"jsbn":381}],373:[function(require,module,exports){
 // Basic Javascript Elliptic Curve implementation
 // Ported loosely from BouncyCastle's Java EC code
 // Only Fp curves implemented for now
@@ -56882,7 +53732,7 @@ var exports = {
 
 module.exports = exports
 
-},{"jsbn":416}],409:[function(require,module,exports){
+},{"jsbn":381}],374:[function(require,module,exports){
 // Named EC curves
 
 // Requires ec.js, jsbn.js, and jsbn2.js
@@ -57054,7 +53904,7 @@ module.exports = {
   "secp256r1":secp256r1
 }
 
-},{"./ec.js":408,"jsbn":416}],410:[function(require,module,exports){
+},{"./ec.js":373,"jsbn":381}],375:[function(require,module,exports){
 "use strict";
 
 /*
@@ -57091,7 +53941,7 @@ var utils = require('./lib/utils');
 
 module.exports = ns;
 
-},{"./lib/curve255":412,"./lib/dh":413,"./lib/eddsa":414,"./lib/utils":415}],411:[function(require,module,exports){
+},{"./lib/curve255":377,"./lib/dh":378,"./lib/eddsa":379,"./lib/utils":380}],376:[function(require,module,exports){
 "use strict";
 /**
  * @fileOverview
@@ -57574,7 +54424,7 @@ var crypto = require('crypto');
 
 module.exports = ns;
 
-},{"crypto":23}],412:[function(require,module,exports){
+},{"crypto":23}],377:[function(require,module,exports){
 "use strict";
 /**
  * @fileOverview
@@ -57797,7 +54647,7 @@ var utils = require('./utils');
 
 module.exports = ns;
 
-},{"./core":411,"./utils":415}],413:[function(require,module,exports){
+},{"./core":376,"./utils":380}],378:[function(require,module,exports){
 (function (Buffer){
 "use strict";
 /**
@@ -57912,7 +54762,7 @@ var curve255 = require('./curve255');
 module.exports = ns;
 
 }).call(this,require("buffer").Buffer)
-},{"./core":411,"./curve255":412,"./utils":415,"buffer":19}],414:[function(require,module,exports){
+},{"./core":376,"./curve255":377,"./utils":380,"buffer":19}],379:[function(require,module,exports){
 (function (Buffer){
 "use strict";
 /**
@@ -58489,7 +55339,7 @@ var crypto = require('crypto');
 module.exports = ns;
 
 }).call(this,{"isBuffer":require("../../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js")})
-},{"../../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"./core":411,"./curve255":412,"./utils":415,"crypto":23,"jsbn":416}],415:[function(require,module,exports){
+},{"../../../../../../../../../../browserify/node_modules/insert-module-globals/node_modules/is-buffer/index.js":218,"./core":376,"./curve255":377,"./utils":380,"crypto":23,"jsbn":381}],380:[function(require,module,exports){
 "use strict";
 /**
  * @fileOverview
@@ -58689,7 +55539,7 @@ var core = require('./core');
 
 module.exports = ns;
 
-},{"./core":411}],416:[function(require,module,exports){
+},{"./core":376}],381:[function(require,module,exports){
 (function(){
 
     // Copyright (c) 2005  Tom Wu
@@ -60049,7 +56899,7 @@ module.exports = ns;
 
 }).call(this);
 
-},{}],417:[function(require,module,exports){
+},{}],382:[function(require,module,exports){
 (function (Buffer){
 (function(nacl) {
 'use strict';
@@ -62471,7 +59321,7 @@ nacl.setPRNG = function(fn) {
 })(typeof module !== 'undefined' && module.exports ? module.exports : (window.nacl = window.nacl || {}));
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":5,"crypto":5}],418:[function(require,module,exports){
+},{"buffer":5,"crypto":5}],383:[function(require,module,exports){
 module.exports      = isTypedArray
 isTypedArray.strict = isStrictTypedArray
 isTypedArray.loose  = isLooseTypedArray
@@ -62514,7 +59364,7 @@ function isLooseTypedArray(arr) {
   return names[toString.call(arr)]
 }
 
-},{}],419:[function(require,module,exports){
+},{}],384:[function(require,module,exports){
 var stream = require('stream')
 
 
@@ -62543,7 +59393,7 @@ module.exports.isReadable = isReadable
 module.exports.isWritable = isWritable
 module.exports.isDuplex   = isDuplex
 
-},{"stream":241}],420:[function(require,module,exports){
+},{"stream":241}],385:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -62572,7 +59422,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],421:[function(require,module,exports){
+},{}],386:[function(require,module,exports){
 /*!
  * mime-types
  * Copyright(c) 2014 Jonathan Ong
@@ -62762,7 +59612,7 @@ function populateMaps(extensions, types) {
   })
 }
 
-},{"mime-db":423,"path":219}],422:[function(require,module,exports){
+},{"mime-db":388,"path":219}],387:[function(require,module,exports){
 module.exports={
   "application/1d-interleaved-parityfec": {
     "source": "iana"
@@ -69391,7 +66241,7 @@ module.exports={
   }
 }
 
-},{}],423:[function(require,module,exports){
+},{}],388:[function(require,module,exports){
 /*!
  * mime-db
  * Copyright(c) 2014 Jonathan Ong
@@ -69404,7 +66254,7 @@ module.exports={
 
 module.exports = require('./db.json')
 
-},{"./db.json":422}],424:[function(require,module,exports){
+},{"./db.json":387}],389:[function(require,module,exports){
 (function (Buffer){
 //     uuid.js
 //
@@ -69680,7 +66530,7 @@ module.exports = require('./db.json')
 })('undefined' !== typeof window ? window : null);
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":19,"crypto":23}],425:[function(require,module,exports){
+},{"buffer":19,"crypto":23}],390:[function(require,module,exports){
 var crypto = require('crypto')
   , qs = require('querystring')
   ;
@@ -69818,7 +66668,7 @@ exports.rfc3986 = rfc3986
 exports.generateBase = generateBase
 
 
-},{"crypto":23,"querystring":224}],426:[function(require,module,exports){
+},{"crypto":23,"querystring":224}],391:[function(require,module,exports){
 'use strict';
 
 var Stringify = require('./stringify');
@@ -69829,7 +66679,7 @@ module.exports = {
     parse: Parse
 };
 
-},{"./parse":427,"./stringify":428}],427:[function(require,module,exports){
+},{"./parse":392,"./stringify":393}],392:[function(require,module,exports){
 'use strict';
 
 var Utils = require('./utils');
@@ -69997,7 +66847,7 @@ module.exports = function (str, opts) {
     return Utils.compact(obj);
 };
 
-},{"./utils":429}],428:[function(require,module,exports){
+},{"./utils":394}],393:[function(require,module,exports){
 'use strict';
 
 var Utils = require('./utils');
@@ -70136,7 +66986,7 @@ module.exports = function (object, opts) {
     return keys.join(delimiter);
 };
 
-},{"./utils":429}],429:[function(require,module,exports){
+},{"./utils":394}],394:[function(require,module,exports){
 'use strict';
 
 var hexTable = (function () {
@@ -70302,7 +67152,7 @@ exports.isBuffer = function (obj) {
     return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
 };
 
-},{}],430:[function(require,module,exports){
+},{}],395:[function(require,module,exports){
 (function (Buffer){
 var util = require('util')
 var Stream = require('stream')
@@ -70408,7 +67258,7 @@ function alignedWrite(buffer) {
 }
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":19,"stream":241,"string_decoder":248,"util":252}],431:[function(require,module,exports){
+},{"buffer":19,"stream":241,"string_decoder":248,"util":252}],396:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -71746,7 +68596,7 @@ module.exports = {
   canonicalDomain: canonicalDomain
 };
 
-},{"../package.json":437,"./memstore":432,"./pathMatch":433,"./permuteDomain":434,"./pubsuffix":435,"./store":436,"net":3,"punycode":221,"url":249}],432:[function(require,module,exports){
+},{"../package.json":402,"./memstore":397,"./pathMatch":398,"./permuteDomain":399,"./pubsuffix":400,"./store":401,"net":3,"punycode":221,"url":249}],397:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -71918,7 +68768,7 @@ MemoryCookieStore.prototype.getAllCookies = function(cb) {
   cb(null, cookies);
 };
 
-},{"./pathMatch":433,"./permuteDomain":434,"./store":436,"util":252}],433:[function(require,module,exports){
+},{"./pathMatch":398,"./permuteDomain":399,"./store":401,"util":252}],398:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -71981,7 +68831,7 @@ function pathMatch (reqPath, cookiePath) {
 
 exports.pathMatch = pathMatch;
 
-},{}],434:[function(require,module,exports){
+},{}],399:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -72039,7 +68889,7 @@ function permuteDomain (domain) {
 
 exports.permuteDomain = permuteDomain;
 
-},{"./pubsuffix":435}],435:[function(require,module,exports){
+},{"./pubsuffix":400}],400:[function(require,module,exports){
 /****************************************************
  * AUTOMATICALLY GENERATED by generate-pubsuffix.js *
  *                  DO NOT EDIT!                    *
@@ -72139,7 +68989,7 @@ var index = module.exports.index = Object.freeze(
 
 // END of automatically generated file
 
-},{"punycode":221}],436:[function(require,module,exports){
+},{"punycode":221}],401:[function(require,module,exports){
 /*!
  * Copyright (c) 2015, Salesforce.com, Inc.
  * All rights reserved.
@@ -72212,7 +69062,7 @@ Store.prototype.getAllCookies = function(cb) {
   throw new Error('getAllCookies is not implemented (therefore jar cannot be serialized)');
 };
 
-},{}],437:[function(require,module,exports){
+},{}],402:[function(require,module,exports){
 module.exports={
   "author": {
     "name": "Jeremy Stashewsky",
@@ -72309,7 +69159,7 @@ module.exports={
   "readme": "ERROR: No README data found!"
 }
 
-},{}],438:[function(require,module,exports){
+},{}],403:[function(require,module,exports){
 (function (process,Buffer){
 'use strict'
 
@@ -72556,7 +69406,7 @@ if (process.env.NODE_DEBUG && /\btunnel\b/.test(process.env.NODE_DEBUG)) {
 exports.debug = debug // for test
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":220,"assert":4,"buffer":19,"events":215,"http":242,"https":216,"net":3,"tls":3,"util":252}],439:[function(require,module,exports){
+},{"_process":220,"assert":4,"buffer":19,"events":215,"http":242,"https":216,"net":3,"tls":3,"util":252}],404:[function(require,module,exports){
 (function (process,Buffer){
 'use strict'
 
@@ -73994,7 +70844,7 @@ Request.prototype.toJSON = requestToJSON
 module.exports = Request
 
 }).call(this,require('_process'),require("buffer").Buffer)
-},{"./lib/auth":308,"./lib/cookies":309,"./lib/getProxyFromURI":310,"./lib/har":311,"./lib/helpers":312,"./lib/multipart":313,"./lib/oauth":314,"./lib/querystring":315,"./lib/redirect":316,"./lib/tunnel":317,"_process":220,"aws-sign2":318,"aws4":319,"bl":321,"buffer":19,"caseless":332,"extend":335,"forever-agent":336,"form-data":337,"hawk":366,"http":242,"http-signature":367,"https":216,"is-typedarray":418,"isstream":419,"mime-types":421,"stream":241,"stringstream":430,"url":249,"util":252,"zlib":18}],440:[function(require,module,exports){
+},{"./lib/auth":273,"./lib/cookies":274,"./lib/getProxyFromURI":275,"./lib/har":276,"./lib/helpers":277,"./lib/multipart":278,"./lib/oauth":279,"./lib/querystring":280,"./lib/redirect":281,"./lib/tunnel":282,"_process":220,"aws-sign2":283,"aws4":284,"bl":286,"buffer":19,"caseless":297,"extend":300,"forever-agent":301,"form-data":302,"hawk":331,"http":242,"http-signature":332,"https":216,"is-typedarray":383,"isstream":384,"mime-types":386,"stream":241,"stringstream":395,"url":249,"util":252,"zlib":18}],405:[function(require,module,exports){
 var tilebelt = require('tilebelt');
 
 /**
@@ -74247,7 +71097,7 @@ function fromID(id) {
     return [x, y, z];
 }
 
-},{"tilebelt":441}],441:[function(require,module,exports){
+},{"tilebelt":406}],406:[function(require,module,exports){
 // a tile is an array [x,y,z]
 var d2r = Math.PI / 180,
     r2d = 180 / Math.PI;
@@ -74438,7 +71288,7 @@ module.exports = {
     pointToTileFraction: pointToTileFraction
 };
 
-},{}],442:[function(require,module,exports){
+},{}],407:[function(require,module,exports){
 /*eslint global-require: 0*/
 
 /**
@@ -74506,7 +71356,7 @@ module.exports.feature = helpers.feature;
 module.exports.featureCollection = helpers.featureCollection;
 module.exports.geometryCollection = helpers.geometryCollection;
 
-},{"turf-along":443,"turf-area":444,"turf-bbox":448,"turf-bbox-polygon":447,"turf-bearing":449,"turf-bezier":451,"turf-buffer":453,"turf-center":456,"turf-centroid":457,"turf-collect":458,"turf-combine":459,"turf-concave":460,"turf-convex":461,"turf-destination":490,"turf-difference":492,"turf-distance":494,"turf-envelope":496,"turf-explode":497,"turf-flip":498,"turf-helpers":499,"turf-hex-grid":500,"turf-inside":501,"turf-intersect":503,"turf-isolines":506,"turf-kinks":509,"turf-line-distance":510,"turf-line-slice":511,"turf-midpoint":513,"turf-nearest":514,"turf-planepoint":515,"turf-point-grid":516,"turf-point-on-line":517,"turf-point-on-surface":518,"turf-random":519,"turf-sample":521,"turf-simplify":522,"turf-square":525,"turf-square-grid":524,"turf-tag":526,"turf-tesselate":527,"turf-tin":529,"turf-triangle-grid":530,"turf-union":531,"turf-within":533}],443:[function(require,module,exports){
+},{"turf-along":408,"turf-area":409,"turf-bbox":413,"turf-bbox-polygon":412,"turf-bearing":414,"turf-bezier":416,"turf-buffer":418,"turf-center":421,"turf-centroid":422,"turf-collect":423,"turf-combine":424,"turf-concave":425,"turf-convex":426,"turf-destination":455,"turf-difference":457,"turf-distance":459,"turf-envelope":461,"turf-explode":462,"turf-flip":463,"turf-helpers":464,"turf-hex-grid":465,"turf-inside":466,"turf-intersect":468,"turf-isolines":471,"turf-kinks":474,"turf-line-distance":475,"turf-line-slice":476,"turf-midpoint":478,"turf-nearest":479,"turf-planepoint":480,"turf-point-grid":481,"turf-point-on-line":482,"turf-point-on-surface":483,"turf-random":484,"turf-sample":486,"turf-simplify":487,"turf-square":490,"turf-square-grid":489,"turf-tag":491,"turf-tesselate":492,"turf-tin":494,"turf-triangle-grid":495,"turf-union":496,"turf-within":498}],408:[function(require,module,exports){
 var measureDistance = require('turf-distance');
 var point = require('turf-helpers').point;
 var bearing = require('turf-bearing');
@@ -74570,7 +71420,7 @@ module.exports = function (line, distance, units) {
     return point(coords[coords.length - 1]);
 };
 
-},{"turf-bearing":449,"turf-destination":490,"turf-distance":494,"turf-helpers":499}],444:[function(require,module,exports){
+},{"turf-bearing":414,"turf-destination":455,"turf-distance":459,"turf-helpers":464}],409:[function(require,module,exports){
 var geometryArea = require('geojson-area').geometry;
 
 /**
@@ -74633,7 +71483,7 @@ function area(input) {
 }
 module.exports = area;
 
-},{"geojson-area":445}],445:[function(require,module,exports){
+},{"geojson-area":410}],410:[function(require,module,exports){
 var wgs84 = require('wgs84');
 
 module.exports.geometry = geometry;
@@ -74723,9 +71573,9 @@ function ringArea(coords) {
 function rad(_) {
     return _ * Math.PI / 180;
 }
-},{"wgs84":446}],446:[function(require,module,exports){
-arguments[4][304][0].apply(exports,arguments)
-},{"dup":304}],447:[function(require,module,exports){
+},{"wgs84":411}],411:[function(require,module,exports){
+arguments[4][269][0].apply(exports,arguments)
+},{"dup":269}],412:[function(require,module,exports){
 var polygon = require('turf-helpers').polygon;
 
 /**
@@ -74757,7 +71607,7 @@ module.exports = function (bbox) {
     ]]);
 };
 
-},{"turf-helpers":499}],448:[function(require,module,exports){
+},{"turf-helpers":464}],413:[function(require,module,exports){
 var each = require('turf-meta').coordEach;
 
 /**
@@ -74826,7 +71676,7 @@ module.exports = function (geojson) {
     return bbox;
 };
 
-},{"turf-meta":512}],449:[function(require,module,exports){
+},{"turf-meta":477}],414:[function(require,module,exports){
 var getCoord = require('turf-invariant').getCoord;
 //http://en.wikipedia.org/wiki/Haversine_formula
 //http://www.movable-type.co.uk/scripts/latlong.html
@@ -74890,7 +71740,7 @@ module.exports = function (start, end) {
     return bearing;
 };
 
-},{"turf-invariant":450}],450:[function(require,module,exports){
+},{"turf-invariant":415}],415:[function(require,module,exports){
 /**
  * Unwrap a coordinate from a Feature with a Point geometry, a Point
  * geometry, or a single coordinate.
@@ -74985,7 +71835,7 @@ module.exports.collectionOf = collectionOf;
 module.exports.featureOf = featureOf;
 module.exports.getCoord = getCoord;
 
-},{}],451:[function(require,module,exports){
+},{}],416:[function(require,module,exports){
 var linestring = require('turf-helpers').lineString;
 var Spline = require('./spline.js');
 
@@ -75053,7 +71903,7 @@ module.exports = function (line, resolution, sharpness) {
     return lineOut;
 };
 
-},{"./spline.js":452,"turf-helpers":499}],452:[function(require,module,exports){
+},{"./spline.js":417,"turf-helpers":464}],417:[function(require,module,exports){
 /* eslint-disable */
 
  /**
@@ -75189,7 +72039,7 @@ Spline.prototype.pos = function (time) {
 
 module.exports = Spline;
 
-},{}],453:[function(require,module,exports){
+},{}],418:[function(require,module,exports){
 // http://stackoverflow.com/questions/839899/how-do-i-calculate-a-point-on-a-circles-circumference
 // radians = degrees * (pi/180)
 // https://github.com/bjornharrtell/jsts/blob/master/examples/buffer.html
@@ -75251,7 +72101,7 @@ function bufferOp(feature, radius) {
     };
 }
 
-},{"geojson-normalize":454,"jsts":455,"turf-helpers":499}],454:[function(require,module,exports){
+},{"geojson-normalize":419,"jsts":420,"turf-helpers":464}],419:[function(require,module,exports){
 module.exports = normalize;
 
 var types = {
@@ -75296,7 +72146,7 @@ function normalize(gj) {
     }
 }
 
-},{}],455:[function(require,module,exports){
+},{}],420:[function(require,module,exports){
 // JSTS. See https://github.com/bjornharrtell/jsts
 // Licenses:
 // https://github.com/bjornharrtell/jsts/blob/master/LICENSE_EDLv1.txt
@@ -75317,7 +72167,7 @@ var i=n.next();this.add(i)}}else if(arguments[0]instanceof St){var r=arguments[0
 !r.isVisited())return this.disconnectedRingcoord=r.getCoordinate(),!0}}return!1},isInteriorsConnected:function(){var t=new I;this.geomGraph.computeSplitEdges(t);var e=new Cn(new On);e.addEdges(t),this.setInteriorEdgesInResult(e),e.linkResultDirectedEdges();var n=this.buildEdgeRings(e.getEdgeEnds());return this.visitShellInteriors(this.geomGraph.getGeometry(),e),!this.hasUnvisitedShellEdge(n)},interfaces_:function(){return[]},getClass:function(){return Kr}}),Kr.findDifferentPoint=function(t,e){for(var n=0;n<t.length;n++)if(!t[n].equals(e))return t[n];return null},e(Zr.prototype,{hasChildren:function(){for(var t=0;2>t;t++)if(null!==this.subnode[t])return!0;return!1},isPrunable:function(){return!(this.hasChildren()||this.hasItems())},addAllItems:function(t){t.addAll(this.items);for(var e=0;2>e;e++)null!==this.subnode[e]&&this.subnode[e].addAllItems(t);return t},size:function(){for(var t=0,e=0;2>e;e++)null!==this.subnode[e]&&(t+=this.subnode[e].size());return t+this.items.size()},addAllItemsFromOverlapping:function(t,e){return null===t||this.isSearchMatch(t)?(e.addAll(this.items),null!==this.subnode[0]&&this.subnode[0].addAllItemsFromOverlapping(t,e),void(null!==this.subnode[1]&&this.subnode[1].addAllItemsFromOverlapping(t,e))):null},hasItems:function(){return!this.items.isEmpty()},remove:function(t,e){if(!this.isSearchMatch(t))return!1;for(var n=!1,i=0;2>i;i++)if(null!==this.subnode[i]&&(n=this.subnode[i].remove(t,e))){this.subnode[i].isPrunable()&&(this.subnode[i]=null);break}return n?n:n=this.items.remove(e)},getItems:function(){return this.items},depth:function(){for(var t=0,e=0;2>e;e++)if(null!==this.subnode[e]){var n=this.subnode[e].depth();n>t&&(t=n)}return t+1},nodeSize:function(){for(var t=0,e=0;2>e;e++)null!==this.subnode[e]&&(t+=this.subnode[e].nodeSize());return t+1},add:function(t){this.items.add(t)},interfaces_:function(){return[]},getClass:function(){return Zr}}),Zr.getSubnodeIndex=function(t,e){var n=-1;return t.min>=e&&(n=1),t.max<=e&&(n=0),n},e(Qr.prototype,{expandToInclude:function(t){t.max>this.max&&(this.max=t.max),t.min<this.min&&(this.min=t.min)},getWidth:function(){return this.max-this.min},overlaps:function(){if(1===arguments.length){var t=arguments[0];return this.overlaps(t.min,t.max)}if(2===arguments.length){var e=arguments[0],n=arguments[1];return!(this.min>n||this.max<e)}},getMin:function(){return this.min},toString:function(){return"["+this.min+", "+this.max+"]"},contains:function(){if(1===arguments.length){if(arguments[0]instanceof Qr){var t=arguments[0];return this.contains(t.min,t.max)}if("number"==typeof arguments[0]){var e=arguments[0];return e>=this.min&&e<=this.max}}else if(2===arguments.length){var n=arguments[0],i=arguments[1];return n>=this.min&&i<=this.max}},init:function(t,e){this.min=t,this.max=e,t>e&&(this.min=e,this.max=t)},getMax:function(){return this.max},interfaces_:function(){return[]},getClass:function(){return Qr}}),e(Jr.prototype,{getInterval:function(){return this.interval},getLevel:function(){return this.level},computeKey:function(t){for(this.level=Jr.computeLevel(t),this.interval=new Qr,this.computeInterval(this.level,t);!this.interval.contains(t);)this.level+=1,this.computeInterval(this.level,t)},computeInterval:function(t,e){var n=Ci.powerOf2(t);this.pt=Math.floor(e.getMin()/n)*n,this.interval.init(this.pt,this.pt+n)},getPoint:function(){return this.pt},interfaces_:function(){return[]},getClass:function(){return Jr}}),Jr.computeLevel=function(t){var e=t.getWidth(),n=Ci.exponent(e)+1;return n},h($r,Zr),e($r.prototype,{getInterval:function(){return this.interval},find:function(t){var e=Zr.getSubnodeIndex(t,this.centre);if(-1===e)return this;if(null!==this.subnode[e]){var n=this.subnode[e];return n.find(t)}return this},insert:function(t){f.isTrue(null===this.interval||this.interval.contains(t.interval));var e=Zr.getSubnodeIndex(t.interval,this.centre);if(t.level===this.level-1)this.subnode[e]=t;else{var n=this.createSubnode(e);n.insert(t),this.subnode[e]=n}},isSearchMatch:function(t){return t.overlaps(this.interval)},getSubnode:function(t){return null===this.subnode[t]&&(this.subnode[t]=this.createSubnode(t)),this.subnode[t]},getNode:function(t){var e=Zr.getSubnodeIndex(t,this.centre);if(-1!==e){var n=this.getSubnode(e);return n.getNode(t)}return this},createSubnode:function(t){var e=0,n=0;switch(t){case 0:e=this.interval.getMin(),n=this.centre;break;case 1:e=this.centre,n=this.interval.getMax()}var i=new Qr(e,n),r=new $r(i,this.level-1);return r},interfaces_:function(){return[]},getClass:function(){return $r}}),$r.createNode=function(t){var e=new Jr(t),n=new $r(e.getInterval(),e.getLevel());return n},$r.createExpanded=function(t,e){var n=new Qr(e);null!==t&&n.expandToInclude(t.interval);var i=$r.createNode(n);return null!==t&&i.insert(t),i},h(ts,Zr),e(ts.prototype,{insert:function(t,e){var n=Zr.getSubnodeIndex(t,ts.origin);if(-1===n)return this.add(e),null;var i=this.subnode[n];if(null===i||!i.getInterval().contains(t)){var r=$r.createExpanded(i,t);this.subnode[n]=r}this.insertContained(this.subnode[n],t,e)},isSearchMatch:function(t){return!0},insertContained:function(t,e,n){f.isTrue(t.getInterval().contains(e));var i=Ri.isZeroWidth(e.getMin(),e.getMax()),r=null;r=i?t.find(e):t.getNode(e),r.add(n)},interfaces_:function(){return[]},getClass:function(){return ts}}),ts.origin=0,e(es.prototype,{size:function(){return null!==this.root?this.root.size():0},insert:function(t,e){this.collectStats(t);var n=es.ensureExtent(t,this.minExtent);this.root.insert(n,e)},query:function(){if(1===arguments.length){if("number"==typeof arguments[0]){var t=arguments[0];return this.query(new Qr(t,t))}if(arguments[0]instanceof Qr){var e=arguments[0],n=new I;return this.query(e,n),n}}else if(2===arguments.length){var i=arguments[0],r=arguments[1];this.root.addAllItemsFromOverlapping(i,r)}},iterator:function(){var t=new I;return this.root.addAllItems(t),t.iterator()},remove:function(t,e){var n=es.ensureExtent(t,this.minExtent);return this.root.remove(n,e)},collectStats:function(t){var e=t.getWidth();e<this.minExtent&&e>0&&(this.minExtent=e)},depth:function(){return null!==this.root?this.root.depth():0},nodeSize:function(){return null!==this.root?this.root.nodeSize():0},interfaces_:function(){return[]},getClass:function(){return es}}),es.ensureExtent=function(t,e){var n=t.getMin(),i=t.getMax();return n!==i?t:(n===i&&(n-=e/2,i=n+e/2),new Qr(n,i))},e(ns.prototype,{isInside:function(t){},interfaces_:function(){return[]},getClass:function(){return ns}}),e(is.prototype,{testLineSegment:function(t,e){var n=null,i=null,r=null,s=null,o=null,a=e.p0,u=e.p1;i=a.x-t.x,r=a.y-t.y,s=u.x-t.x,o=u.y-t.y,(r>0&&0>=o||o>0&&0>=r)&&(n=ue.signOfDet2x2(i,r,s,o)/(o-r),n>0&&this.crossings++)},buildIndex:function(){this.tree=new es;for(var t=H.removeRepeatedPoints(this.ring.getCoordinates()),e=$e.getChains(t),n=0;n<e.size();n++){var i=e.get(n),r=i.getEnvelope();this.interval.min=r.getMinY(),this.interval.max=r.getMaxY(),this.tree.insert(this.interval,i)}},testMonotoneChain:function(t,e,n){n.select(t,e)},isInside:function(t){this.crossings=0;var e=new C(r.NEGATIVE_INFINITY,r.POSITIVE_INFINITY,t.y,t.y);this.interval.min=t.y,this.interval.max=t.y;for(var n=this.tree.query(this.interval),i=new rs(this,t),s=n.iterator();s.hasNext();){var o=s.next();this.testMonotoneChain(e,i,o)}return this.crossings%2===1},interfaces_:function(){return[ns]},getClass:function(){return is}}),h(rs,tr),e(rs.prototype,{select:function(){if(1!==arguments.length)return tr.prototype.select.apply(this,arguments);var t=arguments[0];this.mcp.testLineSegment(this.p,t)},interfaces_:function(){return[]},getClass:function(){return rs}}),is.MCSelecter=rs,e(ss.prototype,{insertEdgeEnds:function(t){for(var e=t.iterator();e.hasNext();){var n=e.next();this.nodes.add(n)}},getNodeIterator:function(){return this.nodes.iterator()},copyNodesAndLabels:function(t,e){for(var n=t.getNodeIterator();n.hasNext();){var i=n.next(),r=this.nodes.addNode(i.getCoordinate());r.setLabel(e,i.getLabel().getLocation(e))}},build:function(t){this.computeIntersectionNodes(t,0),this.copyNodesAndLabels(t,0);var e=new br,n=e.computeEdgeEnds(t.getEdgeIterator());this.insertEdgeEnds(n)},computeIntersectionNodes:function(t,e){for(var n=t.getEdgeIterator();n.hasNext();)for(var i=n.next(),r=i.getLabel().getLocation(e),s=i.getEdgeIntersectionList().iterator();s.hasNext();){var o=s.next(),a=this.nodes.addNode(o.coord);r===L.BOUNDARY?a.setLabelBoundary(e):a.getLabel().isNull(e)&&a.setLabel(e,L.INTERIOR)}},interfaces_:function(){return[]},getClass:function(){return ss}}),e(os.prototype,{isNodeEdgeAreaLabelsConsistent:function(){for(var t=this.nodeGraph.getNodeIterator();t.hasNext();){var e=t.next();if(!e.getEdges().isAreaLabelsConsistent(this.geomGraph))return this.invalidPoint=e.getCoordinate().copy(),!1}return!0},getInvalidPoint:function(){return this.invalidPoint},hasDuplicateRings:function(){for(var t=this.nodeGraph.getNodeIterator();t.hasNext();)for(var e=t.next(),n=e.getEdges().iterator();n.hasNext();){var i=n.next();if(i.getEdgeEnds().size()>1)return this.invalidPoint=i.getEdge().getCoordinate(0),!0}return!1},isNodeConsistentArea:function(){var t=this.geomGraph.computeSelfNodes(this.li,!0,!0);return t.hasProperIntersection()?(this.invalidPoint=t.getProperIntersectionPoint(),!1):(this.nodeGraph.build(this.geomGraph),this.isNodeEdgeAreaLabelsConsistent())},interfaces_:function(){return[]},getClass:function(){return os}}),e(as.prototype,{buildIndex:function(){this.index=new ke;for(var t=0;t<this.rings.size();t++){var e=this.rings.get(t),n=e.getEnvelopeInternal();this.index.insert(n,e)}},getNestedPoint:function(){return this.nestedPt},isNonNested:function(){this.buildIndex();for(var t=0;t<this.rings.size();t++)for(var e=this.rings.get(t),n=e.getCoordinates(),i=this.index.query(e.getEnvelopeInternal()),r=0;r<i.size();r++){var s=i.get(r),o=s.getCoordinates();if(e!==s&&e.getEnvelopeInternal().intersects(s.getEnvelopeInternal())){var a=ls.findPtNotNode(n,s,this.graph);if(null!==a){var u=he.isPointInRing(a,o);if(u)return this.nestedPt=a,!1}}}return!0},add:function(t){this.rings.add(t),this.totalEnv.expandToInclude(t.getEnvelopeInternal())},interfaces_:function(){return[]},getClass:function(){return as}}),e(us.prototype,{getErrorType:function(){return this.errorType},getMessage:function(){return us.errMsg[this.errorType]},getCoordinate:function(){return this.pt},toString:function(){var t="";return null!==this.pt&&(t=" at or near point "+this.pt),this.getMessage()+t},interfaces_:function(){return[]},getClass:function(){return us}}),us.ERROR=0,us.REPEATED_POINT=1,us.HOLE_OUTSIDE_SHELL=2,us.NESTED_HOLES=3,us.DISCONNECTED_INTERIOR=4,us.SELF_INTERSECTION=5,us.RING_SELF_INTERSECTION=6,us.NESTED_SHELLS=7,us.DUPLICATE_RINGS=8,us.TOO_FEW_POINTS=9,us.INVALID_COORDINATE=10,us.RING_NOT_CLOSED=11,us.errMsg=["Topology Validation Error","Repeated Point","Hole lies outside shell","Holes are nested","Interior is disconnected","Self-intersection","Ring Self-intersection","Nested shells","Duplicate Rings","Too few distinct points in geometry component","Invalid Coordinate","Ring is not closed"],e(ls.prototype,{checkInvalidCoordinates:function(){if(arguments[0]instanceof Array){for(var t=arguments[0],e=0;e<t.length;e++)if(!ls.isValid(t[e]))return this.validErr=new us(us.INVALID_COORDINATE,t[e]),null}else if(arguments[0]instanceof Tt){var n=arguments[0];if(this.checkInvalidCoordinates(n.getExteriorRing().getCoordinates()),null!==this.validErr)return null;for(var e=0;e<n.getNumInteriorRing();e++)if(this.checkInvalidCoordinates(n.getInteriorRingN(e).getCoordinates()),null!==this.validErr)return null}},checkHolesNotNested:function(t,e){for(var n=new as(e),i=0;i<t.getNumInteriorRing();i++){var r=t.getInteriorRingN(i);n.add(r)}var s=n.isNonNested();s||(this.validErr=new us(us.NESTED_HOLES,n.getNestedPoint()))},checkConsistentArea:function(t){var e=new os(t),n=e.isNodeConsistentArea();return n?void(e.hasDuplicateRings()&&(this.validErr=new us(us.DUPLICATE_RINGS,e.getInvalidPoint()))):(this.validErr=new us(us.SELF_INTERSECTION,e.getInvalidPoint()),null)},isValid:function(){return this.checkValid(this.parentGeometry),null===this.validErr},checkShellInsideHole:function(t,e,n){var i=t.getCoordinates(),r=e.getCoordinates(),s=ls.findPtNotNode(i,e,n);if(null!==s){var o=he.isPointInRing(s,r);if(!o)return s}var a=ls.findPtNotNode(r,t,n);if(null!==a){var u=he.isPointInRing(a,i);return u?a:null}return f.shouldNeverReachHere("points in shell and hole appear to be equal"),null},checkNoSelfIntersectingRings:function(t){for(var e=t.getEdgeIterator();e.hasNext();){var n=e.next();if(this.checkNoSelfIntersectingRing(n.getEdgeIntersectionList()),null!==this.validErr)return null}},checkConnectedInteriors:function(t){var e=new Kr(t);e.isInteriorsConnected()||(this.validErr=new us(us.DISCONNECTED_INTERIOR,e.getCoordinate()))},checkNoSelfIntersectingRing:function(t){for(var e=new at,n=!0,i=t.iterator();i.hasNext();){var r=i.next();if(n)n=!1;else{if(e.contains(r.coord))return this.validErr=new us(us.RING_SELF_INTERSECTION,r.coord),null;e.add(r.coord)}}},checkHolesInShell:function(t,e){for(var n=t.getExteriorRing(),i=new is(n),r=0;r<t.getNumInteriorRing();r++){var s=t.getInteriorRingN(r),o=ls.findPtNotNode(s.getCoordinates(),n,e);if(null===o)return null;var a=!i.isInside(o);if(a)return this.validErr=new us(us.HOLE_OUTSIDE_SHELL,o),null}},checkTooFewPoints:function(t){return t.hasTooFewPoints()?(this.validErr=new us(us.TOO_FEW_POINTS,t.getInvalidPoint()),null):void 0},getValidationError:function(){return this.checkValid(this.parentGeometry),this.validErr},checkValid:function(){if(arguments[0]instanceof Lt){var t=arguments[0];this.checkInvalidCoordinates(t.getCoordinates())}else if(arguments[0]instanceof Pt){var e=arguments[0];this.checkInvalidCoordinates(e.getCoordinates())}else if(arguments[0]instanceof bt){var n=arguments[0];if(this.checkInvalidCoordinates(n.getCoordinates()),null!==this.validErr)return null;if(this.checkClosedRing(n),null!==this.validErr)return null;var i=new $n(0,n);if(this.checkTooFewPoints(i),null!==this.validErr)return null;var r=new ae;i.computeSelfNodes(r,!0,!0),this.checkNoSelfIntersectingRings(i)}else if(arguments[0]instanceof St){var s=arguments[0];if(this.checkInvalidCoordinates(s.getCoordinates()),null!==this.validErr)return null;var i=new $n(0,s);this.checkTooFewPoints(i)}else if(arguments[0]instanceof Tt){var o=arguments[0];if(this.checkInvalidCoordinates(o),null!==this.validErr)return null;if(this.checkClosedRings(o),null!==this.validErr)return null;var i=new $n(0,o);if(this.checkTooFewPoints(i),null!==this.validErr)return null;if(this.checkConsistentArea(i),null!==this.validErr)return null;if(!this.isSelfTouchingRingFormingHoleValid&&(this.checkNoSelfIntersectingRings(i),null!==this.validErr))return null;if(this.checkHolesInShell(o,i),null!==this.validErr)return null;if(this.checkHolesNotNested(o,i),null!==this.validErr)return null;this.checkConnectedInteriors(i)}else if(arguments[0]instanceof Ot){for(var a=arguments[0],u=0;u<a.getNumGeometries();u++){var l=a.getGeometryN(u);if(this.checkInvalidCoordinates(l),null!==this.validErr)return null;if(this.checkClosedRings(l),null!==this.validErr)return null}var i=new $n(0,a);if(this.checkTooFewPoints(i),null!==this.validErr)return null;if(this.checkConsistentArea(i),null!==this.validErr)return null;if(!this.isSelfTouchingRingFormingHoleValid&&(this.checkNoSelfIntersectingRings(i),null!==this.validErr))return null;for(var u=0;u<a.getNumGeometries();u++){var l=a.getGeometryN(u);if(this.checkHolesInShell(l,i),null!==this.validErr)return null}for(var u=0;u<a.getNumGeometries();u++){var l=a.getGeometryN(u);if(this.checkHolesNotNested(l,i),null!==this.validErr)return null}if(this.checkShellsNotNested(a,i),null!==this.validErr)return null;this.checkConnectedInteriors(i)}else if(arguments[0]instanceof ft)for(var h=arguments[0],u=0;u<h.getNumGeometries();u++){var c=h.getGeometryN(u);if(this.checkValid(c),null!==this.validErr)return null}else if(arguments[0]instanceof B){var f=arguments[0];if(this.validErr=null,f.isEmpty())return null;if(f instanceof Lt)this.checkValid(f);else if(f instanceof Pt)this.checkValid(f);else if(f instanceof bt)this.checkValid(f);else if(f instanceof St)this.checkValid(f);else if(f instanceof Tt)this.checkValid(f);else if(f instanceof Ot)this.checkValid(f);else{if(!(f instanceof ft))throw new UnsupportedOperationException(f.getClass().getName());this.checkValid(f)}}},setSelfTouchingRingFormingHoleValid:function(t){this.isSelfTouchingRingFormingHoleValid=t},checkShellNotNested:function(t,e,n){var i=t.getCoordinates(),r=e.getExteriorRing(),s=r.getCoordinates(),o=ls.findPtNotNode(i,r,n);if(null===o)return null;var a=he.isPointInRing(o,s);if(!a)return null;if(e.getNumInteriorRing()<=0)return this.validErr=new us(us.NESTED_SHELLS,o),null;for(var u=null,l=0;l<e.getNumInteriorRing();l++){var h=e.getInteriorRingN(l);if(u=this.checkShellInsideHole(t,h,n),null===u)return null}this.validErr=new us(us.NESTED_SHELLS,u)},checkClosedRings:function(t){if(this.checkClosedRing(t.getExteriorRing()),null!==this.validErr)return null;for(var e=0;e<t.getNumInteriorRing();e++)if(this.checkClosedRing(t.getInteriorRingN(e)),null!==this.validErr)return null},checkClosedRing:function(t){if(!t.isClosed()){var e=null;t.getNumPoints()>=1&&(e=t.getCoordinateN(0)),this.validErr=new us(us.RING_NOT_CLOSED,e)}},checkShellsNotNested:function(t,e){for(var n=0;n<t.getNumGeometries();n++)for(var i=t.getGeometryN(n),r=i.getExteriorRing(),s=0;s<t.getNumGeometries();s++)if(n!==s){var o=t.getGeometryN(s);if(this.checkShellNotNested(r,o,e),null!==this.validErr)return null}},interfaces_:function(){return[]},getClass:function(){return ls}}),ls.findPtNotNode=function(t,e,n){for(var i=n.findEdge(e),r=i.getEdgeIntersectionList(),s=0;s<t.length;s++){var o=t[s];if(!r.isIntersection(o))return o}return null},ls.isValid=function(){if(arguments[0]instanceof B){var t=arguments[0],e=new ls(t);return e.isValid()}if(arguments[0]instanceof g){var n=arguments[0];return r.isNaN(n.x)?!1:r.isInfinite(n.x)?!1:r.isNaN(n.y)?!1:!r.isInfinite(n.y)}};var bo=Object.freeze({IsValidOp:ls}),Oo=Object.freeze({BoundaryOp:dt,IsSimpleOp:Gi,buffer:Co,distance:So,linemerge:wo,overlay:Lo,polygonize:Ro,relate:To,union:Po,valid:bo});h(hs,_t.CoordinateOperation),e(hs.prototype,{editCoordinates:function(t,e){if(0===t.length)return null;for(var n=new Array(t.length).fill(null),i=0;i<t.length;i++){var r=new g(t[i]);this.targetPM.makePrecise(r),n[i]=r}var s=new N(n,!1),o=s.toCoordinateArray(),a=0;e instanceof St&&(a=2),e instanceof bt&&(a=4);var u=n;return this.removeCollapsed&&(u=null),o.length<a?u:o},interfaces_:function(){return[]},getClass:function(){return hs}}),e(cs.prototype,{fixPolygonalTopology:function(t){var e=t;this.changePrecisionModel||(e=this.changePM(t,this.targetPM));var n=e.buffer(0),i=n;return this.changePrecisionModel||(i=t.getFactory().createGeometry(n)),i},reducePointwise:function(t){var e=null;if(this.changePrecisionModel){var n=this.createFactory(t.getFactory(),this.targetPM);e=new _t(n)}else e=new _t;var i=this.removeCollapsed;t.getDimension()>=2&&(i=!0);var r=e.edit(t,new hs(this.targetPM,i));return r},changePM:function(t,e){var n=this.createEditor(t.getFactory(),e);return n.edit(t,new _t.NoOpGeometryOperation)},setRemoveCollapsedComponents:function(t){this.removeCollapsed=t},createFactory:function(t,e){var n=new ie(e,t.getSRID(),t.getCoordinateSequenceFactory());return n},setChangePrecisionModel:function(t){this.changePrecisionModel=t},reduce:function(t){var e=this.reducePointwise(t);return this.isPointwise?e:R(e,Rt)?e.isValid()?e:this.fixPolygonalTopology(e):e},setPointwise:function(t){this.isPointwise=t},createEditor:function(t,e){if(t.getPrecisionModel()===e)return new _t;var n=this.createFactory(t,e),i=new _t(n);return i},interfaces_:function(){return[]},getClass:function(){return cs}}),cs.reduce=function(t,e){var n=new cs(e);return n.reduce(t)},cs.reducePointwise=function(t,e){var n=new cs(e);return n.setPointwise(!0),n.reduce(t)};var _o=Object.freeze({GeometryPrecisionReducer:cs});e(fs.prototype,{simplifySection:function(t,e){if(t+1===e)return null;this.seg.p0=this.pts[t],this.seg.p1=this.pts[e];for(var n=-1,i=t,r=t+1;e>r;r++){var s=this.seg.distance(this.pts[r]);s>n&&(n=s,i=r)}if(n<=this.distanceTolerance)for(var r=t+1;e>r;r++)this.usePt[r]=!1;else this.simplifySection(t,i),this.simplifySection(i,e)},setDistanceTolerance:function(t){this.distanceTolerance=t},simplify:function(){this.usePt=new Array(this.pts.length).fill(null);for(var t=0;t<this.pts.length;t++)this.usePt[t]=!0;this.simplifySection(0,this.pts.length-1);for(var e=new N,t=0;t<this.pts.length;t++)this.usePt[t]&&e.add(new g(this.pts[t]));return e.toCoordinateArray()},interfaces_:function(){return[]},getClass:function(){return fs}}),fs.simplify=function(t,e){var n=new fs(t);return n.setDistanceTolerance(e),n.simplify()},e(gs.prototype,{setEnsureValid:function(t){this.isEnsureValidTopology=t},getResultGeometry:function(){return this.inputGeom.isEmpty()?this.inputGeom.copy():new ds(this.isEnsureValidTopology,this.distanceTolerance).transform(this.inputGeom)},setDistanceTolerance:function(t){if(0>t)throw new i("Tolerance must be non-negative");this.distanceTolerance=t},interfaces_:function(){return[]},getClass:function(){return gs}}),gs.simplify=function(t,e){var n=new gs(t);return n.setDistanceTolerance(e),n.getResultGeometry()},h(ds,xe),e(ds.prototype,{transformPolygon:function(t,e){if(t.isEmpty())return null;var n=xe.prototype.transformPolygon.call(this,t,e);return e instanceof Ot?n:this.createValidArea(n)},createValidArea:function(t){return this.isEnsureValidTopology?t.buffer(0):t},transformCoordinates:function(t,e){var n=t.toCoordinateArray(),i=null;return i=0===n.length?new Array(0).fill(null):fs.simplify(n,this.distanceTolerance),this.factory.getCoordinateSequenceFactory().create(i)},transformMultiPolygon:function(t,e){var n=xe.prototype.transformMultiPolygon.call(this,t,e);return this.createValidArea(n)},transformLinearRing:function(t,e){var n=e instanceof Tt,i=xe.prototype.transformLinearRing.call(this,t,e);return!n||i instanceof bt?i:null},interfaces_:function(){return[]},getClass:function(){return ds}}),gs.DPTransformer=ds,h(ps,ce),e(ps.prototype,{getIndex:function(){return this.index},getParent:function(){return this.parent},interfaces_:function(){return[]},getClass:function(){return ps}}),e(vs.prototype,{addToResult:function(t){this.resultSegs.add(t)},asLineString:function(){return this.parentLine.getFactory().createLineString(vs.extractCoordinates(this.resultSegs))},getResultSize:function(){var t=this.resultSegs.size();return 0===t?0:t+1},getParent:function(){return this.parentLine},getSegment:function(t){return this.segs[t]},getParentCoordinates:function(){return this.parentLine.getCoordinates()},getMinimumSize:function(){return this.minimumSize},asLinearRing:function(){return this.parentLine.getFactory().createLinearRing(vs.extractCoordinates(this.resultSegs))},getSegments:function(){return this.segs},init:function(){var t=this.parentLine.getCoordinates();this.segs=new Array(t.length-1).fill(null);for(var e=0;e<t.length-1;e++){var n=new ps(t[e],t[e+1],this.parentLine,e);this.segs[e]=n}},getResultCoordinates:function(){return vs.extractCoordinates(this.resultSegs)},interfaces_:function(){return[]},getClass:function(){return vs}}),vs.extractCoordinates=function(t){for(var e=new Array(t.size()+1).fill(null),n=null,i=0;i<t.size();i++)n=t.get(i),e[i]=n.p0;return e[e.length-1]=n.p1,e},e(ms.prototype,{remove:function(t){this.index.remove(new C(t.p0,t.p1),t)},add:function(){if(arguments[0]instanceof vs)for(var t=arguments[0],e=t.getSegments(),n=0;n<e.length;n++){var i=e[n];this.add(i)}else if(arguments[0]instanceof ce){var r=arguments[0];this.index.insert(new C(r.p0,r.p1),r)}},query:function(t){var e=new C(t.p0,t.p1),n=new ys(t);this.index.query(e,n);var i=n.getItems();return i},interfaces_:function(){return[]},getClass:function(){return ms}}),e(ys.prototype,{visitItem:function(t){var e=t;C.intersects(e.p0,e.p1,this.querySeg.p0,this.querySeg.p1)&&this.items.add(t)},getItems:function(){return this.items},interfaces_:function(){return[Ae]},getClass:function(){return ys}}),e(xs.prototype,{flatten:function(t,e){var n=this.linePts[t],i=this.linePts[e],r=new ce(n,i);return this.remove(this.line,t,e),this.outputIndex.add(r),r},hasBadIntersection:function(t,e,n){return this.hasBadOutputIntersection(n)?!0:!!this.hasBadInputIntersection(t,e,n)},setDistanceTolerance:function(t){this.distanceTolerance=t},simplifySection:function(t,e,n){n+=1;var i=new Array(2).fill(null);if(t+1===e){var r=this.line.getSegment(t);return this.line.addToResult(r),null}var s=!0;if(this.line.getResultSize()<this.line.getMinimumSize()){var o=n+1;o<this.line.getMinimumSize()&&(s=!1)}var a=new Array(1).fill(null),u=this.findFurthestPoint(this.linePts,t,e,a);a[0]>this.distanceTolerance&&(s=!1);var l=new ce;if(l.p0=this.linePts[t],l.p1=this.linePts[e],i[0]=t,i[1]=e,this.hasBadIntersection(this.line,i,l)&&(s=!1),s){var r=this.flatten(t,e);return this.line.addToResult(r),null}this.simplifySection(t,u,n),this.simplifySection(u,e,n)},hasBadOutputIntersection:function(t){for(var e=this.outputIndex.query(t),n=e.iterator();n.hasNext();){var i=n.next();if(this.hasInteriorIntersection(i,t))return!0}return!1},findFurthestPoint:function(t,e,n,i){var r=new ce;r.p0=t[e],r.p1=t[n];for(var s=-1,o=e,a=e+1;n>a;a++){var u=t[a],l=r.distance(u);l>s&&(s=l,o=a)}return i[0]=s,o},simplify:function(t){this.line=t,this.linePts=t.getParentCoordinates(),this.simplifySection(0,this.linePts.length-1,0)},remove:function(t,e,n){for(var i=e;n>i;i++){var r=t.getSegment(i);this.inputIndex.remove(r)}},hasInteriorIntersection:function(t,e){return this.li.computeIntersection(t.p0,t.p1,e.p0,e.p1),this.li.isInteriorIntersection()},hasBadInputIntersection:function(t,e,n){for(var i=this.inputIndex.query(n),r=i.iterator();r.hasNext();){var s=r.next();if(this.hasInteriorIntersection(s,n)){if(xs.isInLineSection(t,e,s))continue;return!0}}return!1},interfaces_:function(){return[]},getClass:function(){return xs}}),xs.isInLineSection=function(t,e,n){if(n.getParent()!==t.getParent())return!1;var i=n.getIndex();return i>=e[0]&&i<e[1]},e(Es.prototype,{setDistanceTolerance:function(t){this.distanceTolerance=t},simplify:function(t){for(var e=t.iterator();e.hasNext();)this.inputIndex.add(e.next());for(var e=t.iterator();e.hasNext();){var n=new xs(this.inputIndex,this.outputIndex);n.setDistanceTolerance(this.distanceTolerance),n.simplify(e.next())}},interfaces_:function(){return[]},getClass:function(){return Es}}),e(Is.prototype,{getResultGeometry:function(){if(this.inputGeom.isEmpty())return this.inputGeom.copy();this.linestringMap=new te,this.inputGeom.apply(new Cs(this)),this.lineSimplifier.simplify(this.linestringMap.values());var t=new Ns(this.linestringMap).transform(this.inputGeom);return t},setDistanceTolerance:function(t){if(0>t)throw new i("Tolerance must be non-negative");this.lineSimplifier.setDistanceTolerance(t)},interfaces_:function(){return[]},getClass:function(){return Is}}),Is.simplify=function(t,e){var n=new Is(t);return n.setDistanceTolerance(e),n.getResultGeometry()},h(Ns,xe),e(Ns.prototype,{transformCoordinates:function(t,e){if(0===t.size())return null;if(e instanceof St){var n=this.linestringMap.get(e);return this.createCoordinateSequence(n.getResultCoordinates())}return xe.prototype.transformCoordinates.call(this,t,e)},interfaces_:function(){return[]},getClass:function(){return Ns}}),e(Cs.prototype,{filter:function(t){if(t instanceof St){var e=t;if(e.isEmpty())return null;var n=e.isClosed()?4:2,i=new vs(e,n);this.tps.linestringMap.put(e,i)}},interfaces_:function(){return[q]},getClass:function(){return Cs}}),Is.LineStringTransformer=Ns,Is.LineStringMapBuilderFilter=Cs;var Mo=Object.freeze({DouglasPeuckerSimplifier:gs,TopologyPreservingSimplifier:Is});e(Ss.prototype,{splitAt:function(){if(1===arguments.length){var t=arguments[0],e=this.minimumLen/this.segLen;if(t.distance(this.seg.p0)<this.minimumLen)return this.splitPt=this.seg.pointAlong(e),null;if(t.distance(this.seg.p1)<this.minimumLen)return this.splitPt=Ss.pointAlongReverse(this.seg,e),null;this.splitPt=t}else if(2===arguments.length){var n=arguments[0],i=arguments[1],r=this.getConstrainedLength(n),s=r/this.segLen;i.equals2D(this.seg.p0)?this.splitPt=this.seg.pointAlong(s):this.splitPt=Ss.pointAlongReverse(this.seg,s)}},setMinimumLength:function(t){this.minimumLen=t},getConstrainedLength:function(t){return t<this.minimumLen?this.minimumLen:t},getSplitPoint:function(){return this.splitPt},interfaces_:function(){return[]},getClass:function(){return Ss}}),Ss.pointAlongReverse=function(t,e){var n=new g;return n.x=t.p1.x-e*(t.p1.x-t.p0.x),n.y=t.p1.y-e*(t.p1.y-t.p0.y),n},e(ws.prototype,{findSplitPoint:function(t,e){},interfaces_:function(){return[]},getClass:function(){return ws}}),e(Ls.prototype,{findSplitPoint:function(t,e){var n=t.getLineSegment(),i=n.getLength(),r=i/2,s=new Ss(n),o=Ls.projectedSplitPoint(t,e),a=2*o.distance(e)*.8,u=a;return u>r&&(u=r),s.setMinimumLength(u),s.splitAt(o),s.getSplitPoint()},interfaces_:function(){return[ws]},getClass:function(){return Ls}}),Ls.projectedSplitPoint=function(t,e){var n=t.getLineSegment(),i=n.project(e);return i},e(Rs.prototype,{interfaces_:function(){return[]},getClass:function(){return Rs}}),Rs.triArea=function(t,e,n){return(e.x-t.x)*(n.y-t.y)-(e.y-t.y)*(n.x-t.x)},Rs.isInCircleDDNormalized=function(t,e,n,i){var r=_.valueOf(t.x).selfSubtract(i.x),s=_.valueOf(t.y).selfSubtract(i.y),o=_.valueOf(e.x).selfSubtract(i.x),a=_.valueOf(e.y).selfSubtract(i.y),u=_.valueOf(n.x).selfSubtract(i.x),l=_.valueOf(n.y).selfSubtract(i.y),h=r.multiply(a).selfSubtract(o.multiply(s)),c=o.multiply(l).selfSubtract(u.multiply(a)),f=u.multiply(s).selfSubtract(r.multiply(l)),g=r.multiply(r).selfAdd(s.multiply(s)),d=o.multiply(o).selfAdd(a.multiply(a)),p=u.multiply(u).selfAdd(l.multiply(l)),v=g.selfMultiply(c).selfAdd(d.selfMultiply(f)).selfAdd(p.selfMultiply(h)),m=v.doubleValue()>0;return m},Rs.checkRobustInCircle=function(t,e,n,i){var r=Rs.isInCircleNonRobust(t,e,n,i),s=Rs.isInCircleDDSlow(t,e,n,i),o=Rs.isInCircleCC(t,e,n,i),a=ci.circumcentre(t,e,n);A.out.println("p radius diff a = "+Math.abs(i.distance(a)-t.distance(a))/t.distance(a)),r===s&&r===o||(A.out.println("inCircle robustness failure (double result = "+r+", DD result = "+s+", CC result = "+o+")"),A.out.println(se.toLineString(new Gt([t,e,n,i]))),A.out.println("Circumcentre = "+se.toPoint(a)+" radius = "+t.distance(a)),A.out.println("p radius diff a = "+Math.abs(i.distance(a)/t.distance(a)-1)),A.out.println("p radius diff b = "+Math.abs(i.distance(a)/e.distance(a)-1)),A.out.println("p radius diff c = "+Math.abs(i.distance(a)/n.distance(a)-1)),A.out.println())},Rs.isInCircleDDFast=function(t,e,n,i){var r=_.sqr(t.x).selfAdd(_.sqr(t.y)).selfMultiply(Rs.triAreaDDFast(e,n,i)),s=_.sqr(e.x).selfAdd(_.sqr(e.y)).selfMultiply(Rs.triAreaDDFast(t,n,i)),o=_.sqr(n.x).selfAdd(_.sqr(n.y)).selfMultiply(Rs.triAreaDDFast(t,e,i)),a=_.sqr(i.x).selfAdd(_.sqr(i.y)).selfMultiply(Rs.triAreaDDFast(t,e,n)),u=r.selfSubtract(s).selfAdd(o).selfSubtract(a),l=u.doubleValue()>0;return l},Rs.isInCircleCC=function(t,e,n,i){var r=ci.circumcentre(t,e,n),s=t.distance(r),o=i.distance(r)-s;return 0>=o},Rs.isInCircleNormalized=function(t,e,n,i){var r=t.x-i.x,s=t.y-i.y,o=e.x-i.x,a=e.y-i.y,u=n.x-i.x,l=n.y-i.y,h=r*a-o*s,c=o*l-u*a,f=u*s-r*l,g=r*r+s*s,d=o*o+a*a,p=u*u+l*l,v=g*c+d*f+p*h;return v>0},Rs.isInCircleDDSlow=function(t,e,n,i){var r=_.valueOf(i.x),s=_.valueOf(i.y),o=_.valueOf(t.x),a=_.valueOf(t.y),u=_.valueOf(e.x),l=_.valueOf(e.y),h=_.valueOf(n.x),c=_.valueOf(n.y),f=o.multiply(o).add(a.multiply(a)).multiply(Rs.triAreaDDSlow(u,l,h,c,r,s)),g=u.multiply(u).add(l.multiply(l)).multiply(Rs.triAreaDDSlow(o,a,h,c,r,s)),d=h.multiply(h).add(c.multiply(c)).multiply(Rs.triAreaDDSlow(o,a,u,l,r,s)),p=r.multiply(r).add(s.multiply(s)).multiply(Rs.triAreaDDSlow(o,a,u,l,h,c)),v=f.subtract(g).add(d).subtract(p),m=v.doubleValue()>0;
 return m},Rs.isInCircleNonRobust=function(t,e,n,i){var r=(t.x*t.x+t.y*t.y)*Rs.triArea(e,n,i)-(e.x*e.x+e.y*e.y)*Rs.triArea(t,n,i)+(n.x*n.x+n.y*n.y)*Rs.triArea(t,e,i)-(i.x*i.x+i.y*i.y)*Rs.triArea(t,e,n)>0;return r},Rs.isInCircleRobust=function(t,e,n,i){return Rs.isInCircleNormalized(t,e,n,i)},Rs.triAreaDDSlow=function(t,e,n,i,r,s){return n.subtract(t).multiply(s.subtract(e)).subtract(i.subtract(e).multiply(r.subtract(t)))},Rs.triAreaDDFast=function(t,e,n){var i=_.valueOf(e.x).selfSubtract(t.x).selfMultiply(_.valueOf(n.y).selfSubtract(t.y)),r=_.valueOf(e.y).selfSubtract(t.y).selfMultiply(_.valueOf(n.x).selfSubtract(t.x));return i.selfSubtract(r)},e(Ts.prototype,{circleCenter:function(t,e){var n=new Ts(this.getX(),this.getY()),i=this.bisector(n,t),r=this.bisector(t,e),s=new F(i,r),o=null;try{o=new Ts(s.getX(),s.getY())}catch(i){if(!(i instanceof w))throw i;A.err.println("a: "+n+"  b: "+t+"  c: "+e),A.err.println(i)}finally{}return o},dot:function(t){return this.p.x*t.getX()+this.p.y*t.getY()},magn:function(){return Math.sqrt(this.p.x*this.p.x+this.p.y*this.p.y)},getZ:function(){return this.p.z},bisector:function(t,e){var n=e.getX()-t.getX(),i=e.getY()-t.getY(),r=new F(t.getX()+n/2,t.getY()+i/2,1),s=new F(t.getX()-i+n/2,t.getY()+n+i/2,1);return new F(r,s)},equals:function(){if(1===arguments.length){var t=arguments[0];return this.p.x===t.getX()&&this.p.y===t.getY()}if(2===arguments.length){var e=arguments[0],n=arguments[1];return this.p.distance(e.getCoordinate())<n}},getCoordinate:function(){return this.p},isInCircle:function(t,e,n){return Rs.isInCircleRobust(t.p,e.p,n.p,this.p)},interpolateZValue:function(t,e,n){var i=t.getX(),r=t.getY(),s=e.getX()-i,o=n.getX()-i,a=e.getY()-r,u=n.getY()-r,l=s*u-o*a,h=this.getX()-i,c=this.getY()-r,f=(u*h-o*c)/l,g=(-a*h+s*c)/l,d=t.getZ()+f*(e.getZ()-t.getZ())+g*(n.getZ()-t.getZ());return d},midPoint:function(t){var e=(this.p.x+t.getX())/2,n=(this.p.y+t.getY())/2,i=(this.p.z+t.getZ())/2;return new Ts(e,n,i)},rightOf:function(t){return this.isCCW(t.dest(),t.orig())},isCCW:function(t,e){return(t.p.x-this.p.x)*(e.p.y-this.p.y)-(t.p.y-this.p.y)*(e.p.x-this.p.x)>0},getX:function(){return this.p.x},crossProduct:function(t){return this.p.x*t.getY()-this.p.y*t.getX()},setZ:function(t){this.p.z=t},times:function(t){return new Ts(t*this.p.x,t*this.p.y)},cross:function(){return new Ts(this.p.y,-this.p.x)},leftOf:function(t){return this.isCCW(t.orig(),t.dest())},toString:function(){return"POINT ("+this.p.x+" "+this.p.y+")"},sub:function(t){return new Ts(this.p.x-t.getX(),this.p.y-t.getY())},getY:function(){return this.p.y},classify:function(t,e){var n=this,i=e.sub(t),r=n.sub(t),s=i.crossProduct(r);return s>0?Ts.LEFT:0>s?Ts.RIGHT:i.getX()*r.getX()<0||i.getY()*r.getY()<0?Ts.BEHIND:i.magn()<r.magn()?Ts.BEYOND:t.equals(n)?Ts.ORIGIN:e.equals(n)?Ts.DESTINATION:Ts.BETWEEN},sum:function(t){return new Ts(this.p.x+t.getX(),this.p.y+t.getY())},distance:function(t,e){return Math.sqrt(Math.pow(e.getX()-t.getX(),2)+Math.pow(e.getY()-t.getY(),2))},circumRadiusRatio:function(t,e){var n=this.circleCenter(t,e),i=this.distance(n,t),r=this.distance(this,t),s=this.distance(t,e);return r>s&&(r=s),s=this.distance(e,this),r>s&&(r=s),i/r},interfaces_:function(){return[]},getClass:function(){return Ts}}),Ts.interpolateZ=function(){if(3===arguments.length){var t=arguments[0],e=arguments[1],n=arguments[2],i=e.distance(n),r=t.distance(e),s=n.z-e.z,o=e.z+s*(r/i);return o}if(4===arguments.length){var a=arguments[0],u=arguments[1],l=arguments[2],h=arguments[3],c=u.x,f=u.y,g=l.x-c,d=h.x-c,p=l.y-f,v=h.y-f,m=g*v-d*p,y=a.x-c,x=a.y-f,E=(v*y-d*x)/m,I=(-p*y+g*x)/m,N=u.z+E*(l.z-u.z)+I*(h.z-u.z);return N}},Ts.LEFT=0,Ts.RIGHT=1,Ts.BEYOND=2,Ts.BEHIND=3,Ts.BETWEEN=4,Ts.ORIGIN=5,Ts.DESTINATION=6,h(Ps,Ts),e(Ps.prototype,{getConstraint:function(){return this.constraint},setOnConstraint:function(t){this._isOnConstraint=t},merge:function(t){t._isOnConstraint&&(this._isOnConstraint=!0,this.constraint=t.constraint)},isOnConstraint:function(){return this._isOnConstraint},setConstraint:function(t){this._isOnConstraint=!0,this.constraint=t},interfaces_:function(){return[]},getClass:function(){return Ps}}),e(bs.prototype,{equalsNonOriented:function(t){return this.equalsOriented(t)?!0:!!this.equalsOriented(t.sym())},toLineSegment:function(){return new ce(this.vertex.getCoordinate(),this.dest().getCoordinate())},dest:function(){return this.sym().orig()},oNext:function(){return this.next},equalsOriented:function(t){return!(!this.orig().getCoordinate().equals2D(t.orig().getCoordinate())||!this.dest().getCoordinate().equals2D(t.dest().getCoordinate()))},dNext:function(){return this.sym().oNext().sym()},lPrev:function(){return this.next.sym()},rPrev:function(){return this.sym().oNext()},rot:function(){return this._rot},oPrev:function(){return this._rot.next._rot},sym:function(){return this._rot._rot},setOrig:function(t){this.vertex=t},lNext:function(){return this.invRot().oNext().rot()},getLength:function(){return this.orig().getCoordinate().distance(this.dest().getCoordinate())},invRot:function(){return this._rot.sym()},setDest:function(t){this.sym().setOrig(t)},setData:function(t){this.data=t},getData:function(){return this.data},delete:function(){this._rot=null},orig:function(){return this.vertex},rNext:function(){return this._rot.next.invRot()},toString:function(){var t=this.vertex.getCoordinate(),e=this.dest().getCoordinate();return se.toLineString(t,e)},isLive:function(){return null!==this._rot},getPrimary:function(){return this.orig().getCoordinate().compareTo(this.dest().getCoordinate())<=0?this:this.sym()},dPrev:function(){return this.invRot().oNext().invRot()},setNext:function(t){this.next=t},interfaces_:function(){return[]},getClass:function(){return bs}}),bs.makeEdge=function(t,e){var n=new bs,i=new bs,r=new bs,s=new bs;n._rot=i,i._rot=r,r._rot=s,s._rot=n,n.setNext(n),i.setNext(s),r.setNext(r),s.setNext(i);var o=n;return o.setOrig(t),o.setDest(e),o},bs.swap=function(t){var e=t.oPrev(),n=t.sym().oPrev();bs.splice(t,e),bs.splice(t.sym(),n),bs.splice(t,e.lNext()),bs.splice(t.sym(),n.lNext()),t.setOrig(e.dest()),t.setDest(n.dest())},bs.splice=function(t,e){var n=t.oNext().rot(),i=e.oNext().rot(),r=e.oNext(),s=t.oNext(),o=i.oNext(),a=n.oNext();t.setNext(r),e.setNext(s),n.setNext(o),i.setNext(a)},bs.connect=function(t,e){var n=bs.makeEdge(t.dest(),e.orig());return bs.splice(n,t.lNext()),bs.splice(n.sym(),e),n},e(Os.prototype,{insertSite:function(t){var e=this.subdiv.locate(t);if(this.subdiv.isVertexOfEdge(e,t))return e;this.subdiv.isOnEdge(e,t.getCoordinate())&&(e=e.oPrev(),this.subdiv.delete(e.oNext()));var n=this.subdiv.makeEdge(e.orig(),t);bs.splice(n,e);var i=n;do n=this.subdiv.connect(e,n.sym()),e=n.oPrev();while(e.lNext()!==i);for(;;){var r=e.oPrev();if(r.dest().rightOf(e)&&t.isInCircle(e.orig(),r.dest(),e.dest()))bs.swap(e),e=e.oPrev();else{if(e.oNext()===i)return n;e=e.oNext().lPrev()}}},insertSites:function(t){for(var e=t.iterator();e.hasNext();){var n=e.next();this.insertSite(n)}},interfaces_:function(){return[]},getClass:function(){return Os}}),e(_s.prototype,{locate:function(t){},interfaces_:function(){return[]},getClass:function(){return _s}}),e(Ms.prototype,{init:function(){this.lastEdge=this.findEdge()},locate:function(t){this.lastEdge.isLive()||this.init();var e=this.subdiv.locateFromEdge(t,this.lastEdge);return this.lastEdge=e,e},findEdge:function(){var t=this.subdiv.getEdges();return t.iterator().next()},interfaces_:function(){return[_s]},getClass:function(){return Ms}}),h(Ds,l),e(Ds.prototype,{getSegment:function(){return this.seg},interfaces_:function(){return[]},getClass:function(){return Ds}}),Ds.msgWithSpatial=function(t,e){return null!==e?t+" [ "+e+" ]":t},e(As.prototype,{visit:function(t){},interfaces_:function(){return[]},getClass:function(){return As}}),e(Fs.prototype,{getTriangleVertices:function(t){var e=new Bs;return this.visitTriangles(e,t),e.getTriangleVertices()},isFrameVertex:function(t){return t.equals(this.frameVertex[0])?!0:t.equals(this.frameVertex[1])?!0:!!t.equals(this.frameVertex[2])},isVertexOfEdge:function(t,e){return!(!e.equals(t.orig(),this.tolerance)&&!e.equals(t.dest(),this.tolerance))},connect:function(t,e){var n=bs.connect(t,e);return this.quadEdges.add(n),n},getVoronoiCellPolygon:function(t,e){var n=new I,i=t;do{var r=t.rot().orig().getCoordinate();n.add(r),t=t.oPrev()}while(t!==i);var s=new N;s.addAll(n,!1),s.closeRing(),s.size()<4&&(A.out.println(s),s.add(s.get(s.size()-1),!0));var o=s.toCoordinateArray(),a=e.createPolygon(e.createLinearRing(o),null),u=i.orig();return a.setUserData(u.getCoordinate()),a},setLocator:function(t){this.locator=t},initSubdiv:function(){var t=this.makeEdge(this.frameVertex[0],this.frameVertex[1]),e=this.makeEdge(this.frameVertex[1],this.frameVertex[2]);bs.splice(t.sym(),e);var n=this.makeEdge(this.frameVertex[2],this.frameVertex[0]);return bs.splice(e.sym(),n),bs.splice(n.sym(),t),t},isFrameBorderEdge:function(t){var e=new Array(3).fill(null);Fs.getTriangleEdges(t,e);var n=new Array(3).fill(null);Fs.getTriangleEdges(t.sym(),n);var i=t.lNext().dest();if(this.isFrameVertex(i))return!0;var r=t.sym().lNext().dest();return!!this.isFrameVertex(r)},makeEdge:function(t,e){var n=bs.makeEdge(t,e);return this.quadEdges.add(n),n},visitTriangles:function(t,e){this.visitedKey++;var n=new pe;n.push(this.startingEdge);for(var i=new J;!n.empty();){var r=n.pop();if(!i.contains(r)){var s=this.fetchTriangleToVisit(r,n,e,i);null!==s&&t.visit(s)}}},isFrameEdge:function(t){return!(!this.isFrameVertex(t.orig())&&!this.isFrameVertex(t.dest()))},isOnEdge:function(t,e){this.seg.setCoordinates(t.orig().getCoordinate(),t.dest().getCoordinate());var n=this.seg.distance(e);return n<this.edgeCoincidenceTolerance},getEnvelope:function(){return new C(this.frameEnv)},createFrame:function(t){var e=t.getWidth(),n=t.getHeight(),i=0;i=e>n?10*e:10*n,this.frameVertex[0]=new Ts((t.getMaxX()+t.getMinX())/2,t.getMaxY()+i),this.frameVertex[1]=new Ts(t.getMinX()-i,t.getMinY()-i),this.frameVertex[2]=new Ts(t.getMaxX()+i,t.getMinY()-i),this.frameEnv=new C(this.frameVertex[0].getCoordinate(),this.frameVertex[1].getCoordinate()),this.frameEnv.expandToInclude(this.frameVertex[2].getCoordinate())},getTriangleCoordinates:function(t){var e=new zs;return this.visitTriangles(e,t),e.getTriangles()},getVertices:function(t){for(var e=new J,n=this.quadEdges.iterator();n.hasNext();){var i=n.next(),r=i.orig();!t&&this.isFrameVertex(r)||e.add(r);var s=i.dest();!t&&this.isFrameVertex(s)||e.add(s)}return e},fetchTriangleToVisit:function(t,e,n,i){var r=t,s=0,o=!1;do{this.triEdges[s]=r,this.isFrameEdge(r)&&(o=!0);var a=r.sym();i.contains(a)||e.push(a),i.add(r),s++,r=r.lNext()}while(r!==t);return o&&!n?null:this.triEdges},getEdges:function(){if(0===arguments.length)return this.quadEdges;if(1===arguments.length){for(var t=arguments[0],e=this.getPrimaryEdges(!1),n=new Array(e.size()).fill(null),i=0,r=e.iterator();r.hasNext();){var s=r.next();n[i++]=t.createLineString([s.orig().getCoordinate(),s.dest().getCoordinate()])}return t.createMultiLineString(n)}},getVertexUniqueEdges:function(t){for(var e=new I,n=new J,i=this.quadEdges.iterator();i.hasNext();){var r=i.next(),s=r.orig();n.contains(s)||(n.add(s),!t&&this.isFrameVertex(s)||e.add(r));var o=r.sym(),a=o.orig();n.contains(a)||(n.add(a),!t&&this.isFrameVertex(a)||e.add(o))}return e},getTriangleEdges:function(t){var e=new qs;return this.visitTriangles(e,t),e.getTriangleEdges()},getPrimaryEdges:function(t){this.visitedKey++;var e=new I,n=new pe;n.push(this.startingEdge);for(var i=new J;!n.empty();){var r=n.pop();if(!i.contains(r)){var s=r.getPrimary();!t&&this.isFrameEdge(s)||e.add(s),n.push(r.oNext()),n.push(r.sym().oNext()),i.add(r),i.add(r.sym())}}return e},delete:function(t){bs.splice(t,t.oPrev()),bs.splice(t.sym(),t.sym().oPrev());var e=t.sym(),n=t.rot(),i=t.rot().sym();this.quadEdges.remove(t),this.quadEdges.remove(e),this.quadEdges.remove(n),this.quadEdges.remove(i),t.delete(),e.delete(),n.delete(),i.delete()},locateFromEdge:function(t,e){for(var n=0,i=this.quadEdges.size(),r=e;;){if(n++,n>i)throw new Ds(r.toLineSegment());if(t.equals(r.orig())||t.equals(r.dest()))break;if(t.rightOf(r))r=r.sym();else if(t.rightOf(r.oNext())){if(t.rightOf(r.dPrev()))break;r=r.dPrev()}else r=r.oNext()}return r},getTolerance:function(){return this.tolerance},getVoronoiCellPolygons:function(t){this.visitTriangles(new Gs,!0);for(var e=new I,n=this.getVertexUniqueEdges(!1),i=n.iterator();i.hasNext();){var r=i.next();e.add(this.getVoronoiCellPolygon(r,t))}return e},getVoronoiDiagram:function(t){var e=this.getVoronoiCellPolygons(t);return t.createGeometryCollection(ie.toGeometryArray(e))},getTriangles:function(t){for(var e=this.getTriangleCoordinates(!1),n=new Array(e.size()).fill(null),i=0,r=e.iterator();r.hasNext();){var s=r.next();n[i++]=t.createPolygon(t.createLinearRing(s),null)}return t.createGeometryCollection(n)},insertSite:function(t){var e=this.locate(t);if(t.equals(e.orig(),this.tolerance)||t.equals(e.dest(),this.tolerance))return e;var n=this.makeEdge(e.orig(),t);bs.splice(n,e);var i=n;do n=this.connect(e,n.sym()),e=n.oPrev();while(e.lNext()!==i);return i},locate:function(){if(1===arguments.length){if(arguments[0]instanceof Ts){var t=arguments[0];return this.locator.locate(t)}if(arguments[0]instanceof g){var e=arguments[0];return this.locator.locate(new Ts(e))}}else if(2===arguments.length){var n=arguments[0],i=arguments[1],r=this.locator.locate(new Ts(n));if(null===r)return null;var s=r;r.dest().getCoordinate().equals2D(n)&&(s=r.sym());var o=s;do{if(o.dest().getCoordinate().equals2D(i))return o;o=o.oNext()}while(o!==s);return null}},interfaces_:function(){return[]},getClass:function(){return Fs}}),Fs.getTriangleEdges=function(t,e){if(e[0]=t,e[1]=e[0].lNext(),e[2]=e[1].lNext(),e[2].lNext()!==e[0])throw new i("Edges do not form a triangle")},e(Gs.prototype,{visit:function(t){for(var e=t[0].orig().getCoordinate(),n=t[1].orig().getCoordinate(),i=t[2].orig().getCoordinate(),r=ci.circumcentre(e,n,i),s=new Ts(r),o=0;3>o;o++)t[o].rot().setOrig(s)},interfaces_:function(){return[As]},getClass:function(){return Gs}}),e(qs.prototype,{getTriangleEdges:function(){return this.triList},visit:function(t){this.triList.add(t.clone())},interfaces_:function(){return[As]},getClass:function(){return qs}}),e(Bs.prototype,{visit:function(t){this.triList.add([t[0].orig(),t[1].orig(),t[2].orig()])},getTriangleVertices:function(){return this.triList},interfaces_:function(){return[As]},getClass:function(){return Bs}}),e(zs.prototype,{checkTriangleSize:function(t){var e="";t.length>=2?e=se.toLineString(t[0],t[1]):t.length>=1&&(e=se.toPoint(t[0]))},visit:function(t){this.coordList.clear();for(var e=0;3>e;e++){var n=t[e].orig();this.coordList.add(n.getCoordinate())}if(this.coordList.size()>0){this.coordList.closeRing();var i=this.coordList.toCoordinateArray();if(4!==i.length)return null;this.triCoords.add(i)}},getTriangles:function(){return this.triCoords},interfaces_:function(){return[As]},getClass:function(){return zs}}),Fs.TriangleCircumcentreVisitor=Gs,Fs.TriangleEdgesListVisitor=qs,Fs.TriangleVertexListVisitor=Bs,Fs.TriangleCoordinatesVisitor=zs,Fs.EDGE_COINCIDENCE_TOL_FACTOR=1e3,e(Vs.prototype,{getLineSegment:function(){return this.ls},getEndZ:function(){var t=this.ls.getCoordinate(1);return t.z},getStartZ:function(){var t=this.ls.getCoordinate(0);return t.z},intersection:function(t){return this.ls.intersection(t.getLineSegment())},getStart:function(){return this.ls.getCoordinate(0)},getEnd:function(){return this.ls.getCoordinate(1)},getEndY:function(){var t=this.ls.getCoordinate(1);return t.y},getStartX:function(){var t=this.ls.getCoordinate(0);return t.x},equalsTopo:function(t){return this.ls.equalsTopo(t.getLineSegment())},getStartY:function(){var t=this.ls.getCoordinate(0);return t.y},setData:function(t){this.data=t},getData:function(){return this.data},getEndX:function(){var t=this.ls.getCoordinate(1);return t.x},toString:function(){return this.ls.toString()},interfaces_:function(){return[]},getClass:function(){return Vs}}),e(ks.prototype,{visit:function(t){},interfaces_:function(){return[]},getClass:function(){return ks}}),e(Ys.prototype,{isRepeated:function(){return this.count>1},getRight:function(){return this.right},getCoordinate:function(){return this.p},setLeft:function(t){this.left=t},getX:function(){return this.p.x},getData:function(){return this.data},getCount:function(){return this.count},getLeft:function(){return this.left},getY:function(){return this.p.y},increment:function(){this.count=this.count+1},setRight:function(t){this.right=t},interfaces_:function(){return[]},getClass:function(){return Ys}}),e(Us.prototype,{insert:function(){if(1===arguments.length){var t=arguments[0];return this.insert(t,null)}if(2===arguments.length){var e=arguments[0],n=arguments[1];if(null===this.root)return this.root=new Ys(e,n),this.root;if(this.tolerance>0){var i=this.findBestMatchNode(e);if(null!==i)return i.increment(),i}return this.insertExact(e,n)}},query:function(){var t=arguments,e=this;if(1===arguments.length){var n=arguments[0],i=new I;return this.query(n,i),i}if(2===arguments.length)if(arguments[0]instanceof C&&R(arguments[1],y))!function(){var n=t[0],i=t[1];e.queryNode(e.root,n,!0,{interfaces_:function(){return[ks]},visit:function(t){i.add(t)}})}();else if(arguments[0]instanceof C&&R(arguments[1],ks)){var r=arguments[0],s=arguments[1];this.queryNode(this.root,r,!0,s)}},queryNode:function(t,e,n,i){if(null===t)return null;var r=null,s=null,o=null;n?(r=e.getMinX(),s=e.getMaxX(),o=t.getX()):(r=e.getMinY(),s=e.getMaxY(),o=t.getY());var a=o>r,u=s>=o;a&&this.queryNode(t.getLeft(),e,!n,i),e.contains(t.getCoordinate())&&i.visit(t),u&&this.queryNode(t.getRight(),e,!n,i)},findBestMatchNode:function(t){var e=new Xs(t,this.tolerance);return this.query(e.queryEnvelope(),e),e.getNode()},isEmpty:function(){return null===this.root},insertExact:function(t,e){for(var n=this.root,i=this.root,r=!0,s=!0;null!==n;){if(null!==n){var o=t.distance(n.getCoordinate())<=this.tolerance;if(o)return n.increment(),n}s=r?t.x<n.getX():t.y<n.getY(),i=n,n=s?n.getLeft():n.getRight(),r=!r}this.numberOfNodes=this.numberOfNodes+1;var a=new Ys(t,e);return s?i.setLeft(a):i.setRight(a),a},interfaces_:function(){return[]},getClass:function(){return Us}}),Us.toCoordinates=function(){if(1===arguments.length){var t=arguments[0];return Us.toCoordinates(t,!1)}if(2===arguments.length){for(var e=arguments[0],n=arguments[1],i=new N,r=e.iterator();r.hasNext();)for(var s=r.next(),o=n?s.getCount():1,a=0;o>a;a++)i.add(s.getCoordinate(),!0);return i.toCoordinateArray()}},e(Xs.prototype,{visit:function(t){var e=this.p.distance(t.getCoordinate()),n=e<=this.tolerance;if(!n)return null;var i=!1;(null===this.matchNode||e<this.matchDist||null!==this.matchNode&&e===this.matchDist&&t.getCoordinate().compareTo(this.matchNode.getCoordinate())<1)&&(i=!0),i&&(this.matchNode=t,this.matchDist=e)},queryEnvelope:function(){var t=new C(this.p);return t.expandBy(this.tolerance),t},getNode:function(){return this.matchNode},interfaces_:function(){return[ks]},getClass:function(){return Xs}}),Us.BestMatchVisitor=Xs,e(Hs.prototype,{getInitialVertices:function(){return this.initialVertices},getKDT:function(){return this.kdt},enforceConstraints:function(){this.addConstraintVertices();var t=0,e=0;do e=this.enforceGabriel(this.segments),t++;while(e>0&&t<Hs.MAX_SPLIT_ITER)},insertSites:function(t){for(var e=t.iterator();e.hasNext();){var n=e.next();this.insertSite(n)}},getVertexFactory:function(){return this.vertexFactory},getPointArray:function(){for(var t=new Array(this.initialVertices.size()+this.segVertices.size()).fill(null),e=0,n=this.initialVertices.iterator();n.hasNext();){var i=n.next();t[e++]=i.getCoordinate()}for(var r=this.segVertices.iterator();r.hasNext();){var i=r.next();t[e++]=i.getCoordinate()}return t},setConstraints:function(t,e){this.segments=t,this.segVertices=e},computeConvexHull:function(){var t=new ie,e=this.getPointArray(),n=new me(e,t);this.convexHull=n.getConvexHull()},addConstraintVertices:function(){this.computeConvexHull(),this.insertSites(this.segVertices)},findNonGabrielPoint:function(t){var e=t.getStart(),n=t.getEnd(),i=new g((e.x+n.x)/2,(e.y+n.y)/2),s=e.distance(i),o=new C(i);o.expandBy(s);for(var a=this.kdt.query(o),u=null,l=r.MAX_VALUE,h=a.iterator();h.hasNext();){var c=h.next(),f=c.getCoordinate();if(!f.equals2D(e)&&!f.equals2D(n)){var d=i.distance(f);if(s>d){var p=d;(null===u||l>p)&&(u=f,l=p)}}}return u},getConstraintSegments:function(){return this.segments},setSplitPointFinder:function(t){this.splitFinder=t},getConvexHull:function(){return this.convexHull},getTolerance:function(){return this.tolerance},enforceGabriel:function(t){for(var e=new I,n=0,i=new I,r=t.iterator();r.hasNext();){var s=r.next(),o=this.findNonGabrielPoint(s);if(null!==o){this.splitPt=this.splitFinder.findSplitPoint(s,o);var a=this.createVertex(this.splitPt,s),u=(this.insertSite(a),new Vs(s.getStartX(),s.getStartY(),s.getStartZ(),a.getX(),a.getY(),a.getZ(),s.getData())),l=new Vs(a.getX(),a.getY(),a.getZ(),s.getEndX(),s.getEndY(),s.getEndZ(),s.getData());e.add(u),e.add(l),i.add(s),n+=1}}return t.removeAll(i),t.addAll(e),n},createVertex:function(){if(1===arguments.length){var t=arguments[0],e=null;return e=null!==this.vertexFactory?this.vertexFactory.createVertex(t,null):new Ps(t)}if(2===arguments.length){var n=arguments[0],i=arguments[1],e=null;return e=null!==this.vertexFactory?this.vertexFactory.createVertex(n,i):new Ps(n),e.setOnConstraint(!0),e}},getSubdivision:function(){return this.subdiv},computeBoundingBox:function(){var t=Hs.computeVertexEnvelope(this.initialVertices),e=Hs.computeVertexEnvelope(this.segVertices),n=new C(t);n.expandToInclude(e);var i=.2*n.getWidth(),r=.2*n.getHeight(),s=Math.max(i,r);this.computeAreaEnv=new C(n),this.computeAreaEnv.expandBy(s)},setVertexFactory:function(t){this.vertexFactory=t},formInitialDelaunay:function(){this.computeBoundingBox(),this.subdiv=new Fs(this.computeAreaEnv,this.tolerance),this.subdiv.setLocator(new Ms(this.subdiv)),this.incDel=new Os(this.subdiv),this.insertSites(this.initialVertices)},insertSite:function(){if(arguments[0]instanceof Ps){var t=arguments[0],e=this.kdt.insert(t.getCoordinate(),t);if(e.isRepeated()){var n=e.getData();return n.merge(t),n}return this.incDel.insertSite(t),t}if(arguments[0]instanceof g){var i=arguments[0];this.insertSite(this.createVertex(i))}},interfaces_:function(){return[]},getClass:function(){return Hs}}),Hs.computeVertexEnvelope=function(t){for(var e=new C,n=t.iterator();n.hasNext();){var i=n.next();e.expandToInclude(i.getCoordinate())}return e},Hs.MAX_SPLIT_ITER=99,e(Ws.prototype,{create:function(){if(null!==this.subdiv)return null;var t=Ws.envelope(this.siteCoords),e=Ws.toVertices(this.siteCoords);this.subdiv=new Fs(t,this.tolerance);var n=new Os(this.subdiv);n.insertSites(e)},setTolerance:function(t){this.tolerance=t},setSites:function(){if(arguments[0]instanceof B){var t=arguments[0];this.siteCoords=Ws.extractUniqueCoordinates(t)}else if(R(arguments[0],v)){var e=arguments[0];this.siteCoords=Ws.unique(H.toCoordinateArray(e))}},getEdges:function(t){return this.create(),this.subdiv.getEdges(t)},getSubdivision:function(){return this.create(),this.subdiv},getTriangles:function(t){return this.create(),this.subdiv.getTriangles(t)},interfaces_:function(){return[]},getClass:function(){return Ws}}),Ws.extractUniqueCoordinates=function(t){if(null===t)return new N;var e=t.getCoordinates();return Ws.unique(e)},Ws.envelope=function(t){for(var e=new C,n=t.iterator();n.hasNext();){var i=n.next();e.expandToInclude(i)}return e},Ws.unique=function(t){var e=H.copyDeep(t);ut.sort(e);var n=new N(e,!1);return n},Ws.toVertices=function(t){for(var e=new I,n=t.iterator();n.hasNext();){var i=n.next();e.add(new Ts(i))}return e},e(js.prototype,{createSiteVertices:function(t){for(var e=new I,n=t.iterator();n.hasNext();){var i=n.next();this.constraintVertexMap.containsKey(i)||e.add(new Ps(i))}return e},create:function(){if(null!==this.subdiv)return null;var t=Ws.envelope(this.siteCoords),e=new I;null!==this.constraintLines&&(t.expandToInclude(this.constraintLines.getEnvelopeInternal()),this.createVertices(this.constraintLines),e=js.createConstraintSegments(this.constraintLines));var n=this.createSiteVertices(this.siteCoords),i=new Hs(n,this.tolerance);i.setConstraints(e,new I(this.constraintVertexMap.values())),i.formInitialDelaunay(),i.enforceConstraints(),this.subdiv=i.getSubdivision()},setTolerance:function(t){this.tolerance=t},setConstraints:function(t){this.constraintLines=t},setSites:function(t){this.siteCoords=Ws.extractUniqueCoordinates(t)},getEdges:function(t){return this.create(),this.subdiv.getEdges(t)},getSubdivision:function(){return this.create(),this.subdiv},getTriangles:function(t){return this.create(),this.subdiv.getTriangles(t)},createVertices:function(t){for(var e=t.getCoordinates(),n=0;n<e.length;n++){var i=new Ps(e[n]);this.constraintVertexMap.put(e[n],i)}},interfaces_:function(){return[]},getClass:function(){return js}}),js.createConstraintSegments=function(){if(1===arguments.length){for(var t=arguments[0],e=kn.getLines(t),n=new I,i=e.iterator();i.hasNext();){var r=i.next();js.createConstraintSegments(r,n)}return n}if(2===arguments.length)for(var s=arguments[0],o=arguments[1],a=s.getCoordinates(),i=1;i<a.length;i++)o.add(new Vs(a[i-1],a[i]))},e(Ks.prototype,{create:function(){if(null!==this.subdiv)return null;var t=Ws.envelope(this.siteCoords);this.diagramEnv=t;var e=Math.max(this.diagramEnv.getWidth(),this.diagramEnv.getHeight());this.diagramEnv.expandBy(e),null!==this.clipEnv&&this.diagramEnv.expandToInclude(this.clipEnv);var n=Ws.toVertices(this.siteCoords);this.subdiv=new Fs(t,this.tolerance);var i=new Os(this.subdiv);i.insertSites(n)},getDiagram:function(t){this.create();var e=this.subdiv.getVoronoiDiagram(t);return Ks.clipGeometryCollection(e,this.diagramEnv)},setTolerance:function(t){this.tolerance=t},setSites:function(){if(arguments[0]instanceof B){var t=arguments[0];this.siteCoords=Ws.extractUniqueCoordinates(t)}else if(R(arguments[0],v)){var e=arguments[0];this.siteCoords=Ws.unique(H.toCoordinateArray(e))}},setClipEnvelope:function(t){this.clipEnv=t},getSubdivision:function(){return this.create(),this.subdiv},interfaces_:function(){return[]},getClass:function(){return Ks}}),Ks.clipGeometryCollection=function(t,e){for(var n=t.getFactory().toGeometry(e),i=new I,r=0;r<t.getNumGeometries();r++){var s=t.getGeometryN(r),o=null;e.contains(s.getEnvelopeInternal())?o=s:e.intersects(s.getEnvelopeInternal())&&(o=n.intersection(s),o.setUserData(s.getUserData())),null===o||o.isEmpty()||i.add(o)}return t.getFactory().createGeometryCollection(ie.toGeometryArray(i))};var Do=Object.freeze({ConformingDelaunayTriangulationBuilder:js,DelaunayTriangulationBuilder:Ws,VoronoiDiagramBuilder:Ks});e(Zs.prototype,{interfaces_:function(){return[]},getClass:function(){return Zs}}),Zs.union=function(t,e){if(t.isEmpty()||e.isEmpty()){if(t.isEmpty()&&e.isEmpty())return ii.createEmptyResult(ii.UNION,t,e,t.getFactory());if(t.isEmpty())return e.copy();if(e.isEmpty())return t.copy()}return t.checkNotGeometryCollection(t),t.checkNotGeometryCollection(e),si.overlayOp(t,e,ii.UNION)},e(B.prototype,{equalsTopo:function(t){return this.getEnvelopeInternal().equals(t.getEnvelopeInternal())?Yr.relate(this,t).isEquals(this.getDimension(),t.getDimension()):!1},union:function(){if(0===arguments.length)return jr.union(this);if(1===arguments.length){var t=arguments[0];return Zs.union(this,t)}},isValid:function(){return ls.isValid(this)},intersection:function(t){if(this.isEmpty()||t.isEmpty())return ii.createEmptyResult(ii.INTERSECTION,this,t,this.factory);if(this.isGeometryCollection()){var e=t;return hn.map(this,{interfaces_:function(){return[MapOp]},map:function(t){return t.intersection(e)}})}return this.checkNotGeometryCollection(this),this.checkNotGeometryCollection(t),si.overlayOp(this,t,ii.INTERSECTION)},covers:function(t){return Yr.covers(this,t)},coveredBy:function(t){return Yr.coveredBy(this,t)},touches:function(t){return Yr.touches(this,t)},intersects:function(t){return Yr.intersects(this,t)},within:function(t){return Yr.within(this,t)},overlaps:function(t){return Yr.overlaps(this,t)},disjoint:function(t){return Yr.disjoint(this,t)},crosses:function(t){return Yr.crosses(this,t)},buffer:function(){if(1===arguments.length){var t=arguments[0];return sr.bufferOp(this,t)}if(2===arguments.length){var e=arguments[0],n=arguments[1];return sr.bufferOp(this,e,n)}if(3===arguments.length){var i=arguments[0],r=arguments[1],s=arguments[2];return sr.bufferOp(this,i,r,s)}},convexHull:function(){return new me(this).getConvexHull()},relate:function(){for(var t=arguments.length,e=Array(t),n=0;t>n;n++)e[n]=arguments[n];return Yr.relate.apply(Yr,[this].concat(e))},getCentroid:function(){if(this.isEmpty())return this.factory.createPoint();var t=ge.getCentroid(this);return this.createPointFromInternalCoord(t,this)},getInteriorPoint:function(){if(this.isEmpty())return this.factory.createPoint();var t=null,e=this.getDimension();if(0===e){var n=new li(this);t=n.getInteriorPoint()}else if(1===e){var n=new ui(this);t=n.getInteriorPoint()}else{var n=new oi(this);t=n.getInteriorPoint()}return this.createPointFromInternalCoord(t,this)},symDifference:function(t){if(this.isEmpty()||t.isEmpty()){if(this.isEmpty()&&t.isEmpty())return ii.createEmptyResult(ii.SYMDIFFERENCE,this,t,this.factory);if(this.isEmpty())return t.copy();if(t.isEmpty())return this.copy()}return this.checkNotGeometryCollection(this),this.checkNotGeometryCollection(t),si.overlayOp(this,t,ii.SYMDIFFERENCE)},createPointFromInternalCoord:function(t,e){return e.getPrecisionModel().makePrecise(t),e.getFactory().createPoint(t)},toText:function(){var t=new se;return t.write(this)},toString:function(){this.toText()},contains:function(t){return Yr.contains(this,t)},difference:function(t){return this.isEmpty()?ii.createEmptyResult(ii.DIFFERENCE,this,t,this.factory):t.isEmpty()?this.copy():(this.checkNotGeometryCollection(this),this.checkNotGeometryCollection(t),si.overlayOp(this,t,ii.DIFFERENCE))},isSimple:function(){var t=new Gi(this);return t.isSimple()},isWithinDistance:function(t,e){var n=this.getEnvelopeInternal().distance(t.getEnvelopeInternal());return n>e?!1:hr.isWithinDistance(this,t,e)},distance:function(t){return hr.distance(this,t)},isEquivalentClass:function(t){return this.getClass()===t.getClass()}});var Ao="1.1.2 (248dab8)";t.version=Ao,t.algorithm=co,t.densify=fo,t.dissolve=go,t.geom=lo,t.index=mo,t.io=Io,t.noding=No,t.operation=Oo,t.precision=_o,t.simplify=Mo,t.triangulate=Do});
 
-},{}],456:[function(require,module,exports){
+},{}],421:[function(require,module,exports){
 var bbox = require('turf-bbox'),
     point = require('turf-helpers').point;
 
@@ -75440,7 +72290,7 @@ module.exports = function (layer) {
     return point([x, y]);
 };
 
-},{"turf-bbox":448,"turf-helpers":499}],457:[function(require,module,exports){
+},{"turf-bbox":413,"turf-helpers":464}],422:[function(require,module,exports){
 var each = require('turf-meta').coordEach;
 var point = require('turf-helpers').point;
 
@@ -75488,7 +72338,7 @@ module.exports = function (features) {
     return point([xSum / len, ySum / len]);
 };
 
-},{"turf-helpers":499,"turf-meta":512}],458:[function(require,module,exports){
+},{"turf-helpers":464,"turf-meta":477}],423:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -75536,7 +72386,7 @@ module.exports = function collect(polygons, points, inProperty, outProperty) {
     return polygons;
 };
 
-},{"turf-inside":501}],459:[function(require,module,exports){
+},{"turf-inside":466}],424:[function(require,module,exports){
 var meta = require('turf-meta');
 
 /**
@@ -75627,7 +72477,7 @@ module.exports = function (fc) {
     };
 };
 
-},{"turf-meta":512}],460:[function(require,module,exports){
+},{"turf-meta":477}],425:[function(require,module,exports){
 // 1. run tin on points
 // 2. calculate lenth of all edges and area of all triangles
 // 3. remove triangles that fail the max length test
@@ -75745,7 +72595,7 @@ function merge(polygons) {
 
 module.exports = concave;
 
-},{"turf-distance":494,"turf-tin":529,"turf-union":531}],461:[function(require,module,exports){
+},{"turf-distance":459,"turf-tin":494,"turf-union":496}],426:[function(require,module,exports){
 var each = require('turf-meta').coordEach,
     convexHull = require('convex-hull'),
     polygon = require('turf-helpers').polygon;
@@ -75836,7 +72686,7 @@ module.exports = function (featurecollection) {
     return undefined;
 };
 
-},{"convex-hull":462,"turf-helpers":499,"turf-meta":512}],462:[function(require,module,exports){
+},{"convex-hull":427,"turf-helpers":464,"turf-meta":477}],427:[function(require,module,exports){
 "use strict"
 
 var convexHull1d = require('./lib/ch1d')
@@ -75862,7 +72712,7 @@ function convexHull(points) {
   }
   return convexHullnd(points, d)
 }
-},{"./lib/ch1d":463,"./lib/ch2d":464,"./lib/chnd":465}],463:[function(require,module,exports){
+},{"./lib/ch1d":428,"./lib/ch2d":429,"./lib/chnd":430}],428:[function(require,module,exports){
 "use strict"
 
 module.exports = convexHull1d
@@ -75886,7 +72736,7 @@ function convexHull1d(points) {
     return [[lo]]
   }
 }
-},{}],464:[function(require,module,exports){
+},{}],429:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHull2D
@@ -75909,7 +72759,7 @@ function convexHull2D(points) {
   return edges
 }
 
-},{"monotone-convex-hull-2d":483}],465:[function(require,module,exports){
+},{"monotone-convex-hull-2d":448}],430:[function(require,module,exports){
 'use strict'
 
 module.exports = convexHullnD
@@ -75970,7 +72820,7 @@ function convexHullnD(points, d) {
     return invPermute(nhull, ah)
   }
 }
-},{"affine-hull":466,"incremental-convex-hull":473}],466:[function(require,module,exports){
+},{"affine-hull":431,"incremental-convex-hull":438}],431:[function(require,module,exports){
 'use strict'
 
 module.exports = affineHull
@@ -76022,7 +72872,7 @@ function affineHull(points) {
   }
   return index
 }
-},{"robust-orientation":472}],467:[function(require,module,exports){
+},{"robust-orientation":437}],432:[function(require,module,exports){
 "use strict"
 
 module.exports = fastTwoSum
@@ -76040,7 +72890,7 @@ function fastTwoSum(a, b, result) {
 	}
 	return [ar+br, x]
 }
-},{}],468:[function(require,module,exports){
+},{}],433:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -76091,7 +72941,7 @@ function scaleLinearExpansion(e, scale) {
   g.length = count
   return g
 }
-},{"two-product":471,"two-sum":467}],469:[function(require,module,exports){
+},{"two-product":436,"two-sum":432}],434:[function(require,module,exports){
 "use strict"
 
 module.exports = robustSubtract
@@ -76248,7 +73098,7 @@ function robustSubtract(e, f) {
   g.length = count
   return g
 }
-},{}],470:[function(require,module,exports){
+},{}],435:[function(require,module,exports){
 "use strict"
 
 module.exports = linearExpansionSum
@@ -76405,7 +73255,7 @@ function linearExpansionSum(e, f) {
   g.length = count
   return g
 }
-},{}],471:[function(require,module,exports){
+},{}],436:[function(require,module,exports){
 "use strict"
 
 module.exports = twoProduct
@@ -76439,7 +73289,7 @@ function twoProduct(a, b, result) {
 
   return [ y, x ]
 }
-},{}],472:[function(require,module,exports){
+},{}],437:[function(require,module,exports){
 "use strict"
 
 var twoProduct = require("two-product")
@@ -76630,7 +73480,7 @@ function generateOrientationProc() {
 }
 
 generateOrientationProc()
-},{"robust-scale":468,"robust-subtract":469,"robust-sum":470,"two-product":471}],473:[function(require,module,exports){
+},{"robust-scale":433,"robust-subtract":434,"robust-sum":435,"two-product":436}],438:[function(require,module,exports){
 "use strict"
 
 //High level idea:
@@ -77077,19 +73927,19 @@ function incrementalConvexHull(points, randomSearch) {
   //Extract boundary cells
   return triangles.boundary()
 }
-},{"robust-orientation":479,"simplicial-complex":482}],474:[function(require,module,exports){
-arguments[4][467][0].apply(exports,arguments)
-},{"dup":467}],475:[function(require,module,exports){
-arguments[4][468][0].apply(exports,arguments)
-},{"dup":468,"two-product":478,"two-sum":474}],476:[function(require,module,exports){
-arguments[4][469][0].apply(exports,arguments)
-},{"dup":469}],477:[function(require,module,exports){
-arguments[4][470][0].apply(exports,arguments)
-},{"dup":470}],478:[function(require,module,exports){
-arguments[4][471][0].apply(exports,arguments)
-},{"dup":471}],479:[function(require,module,exports){
-arguments[4][472][0].apply(exports,arguments)
-},{"dup":472,"robust-scale":475,"robust-subtract":476,"robust-sum":477,"two-product":478}],480:[function(require,module,exports){
+},{"robust-orientation":444,"simplicial-complex":447}],439:[function(require,module,exports){
+arguments[4][432][0].apply(exports,arguments)
+},{"dup":432}],440:[function(require,module,exports){
+arguments[4][433][0].apply(exports,arguments)
+},{"dup":433,"two-product":443,"two-sum":439}],441:[function(require,module,exports){
+arguments[4][434][0].apply(exports,arguments)
+},{"dup":434}],442:[function(require,module,exports){
+arguments[4][435][0].apply(exports,arguments)
+},{"dup":435}],443:[function(require,module,exports){
+arguments[4][436][0].apply(exports,arguments)
+},{"dup":436}],444:[function(require,module,exports){
+arguments[4][437][0].apply(exports,arguments)
+},{"dup":437,"robust-scale":440,"robust-subtract":441,"robust-sum":442,"two-product":443}],445:[function(require,module,exports){
 /**
  * Bit twiddling hacks for JavaScript.
  *
@@ -77295,7 +74145,7 @@ exports.nextCombination = function(v) {
 }
 
 
-},{}],481:[function(require,module,exports){
+},{}],446:[function(require,module,exports){
 "use strict"; "use restrict";
 
 module.exports = UnionFind;
@@ -77358,7 +74208,7 @@ proto.link = function(x, y) {
     ++ranks[xr];
   }
 }
-},{}],482:[function(require,module,exports){
+},{}],447:[function(require,module,exports){
 "use strict"; "use restrict";
 
 var bits      = require("bit-twiddle")
@@ -77702,7 +74552,7 @@ function connectedComponents(cells, vertex_count) {
 }
 exports.connectedComponents = connectedComponents
 
-},{"bit-twiddle":480,"union-find":481}],483:[function(require,module,exports){
+},{"bit-twiddle":445,"union-find":446}],448:[function(require,module,exports){
 'use strict'
 
 module.exports = monotoneConvexHull2D
@@ -77784,19 +74634,19 @@ function monotoneConvexHull2D(points) {
   //Return result
   return result
 }
-},{"robust-orientation":489}],484:[function(require,module,exports){
-arguments[4][467][0].apply(exports,arguments)
-},{"dup":467}],485:[function(require,module,exports){
-arguments[4][468][0].apply(exports,arguments)
-},{"dup":468,"two-product":488,"two-sum":484}],486:[function(require,module,exports){
-arguments[4][469][0].apply(exports,arguments)
-},{"dup":469}],487:[function(require,module,exports){
-arguments[4][470][0].apply(exports,arguments)
-},{"dup":470}],488:[function(require,module,exports){
-arguments[4][471][0].apply(exports,arguments)
-},{"dup":471}],489:[function(require,module,exports){
-arguments[4][472][0].apply(exports,arguments)
-},{"dup":472,"robust-scale":485,"robust-subtract":486,"robust-sum":487,"two-product":488}],490:[function(require,module,exports){
+},{"robust-orientation":454}],449:[function(require,module,exports){
+arguments[4][432][0].apply(exports,arguments)
+},{"dup":432}],450:[function(require,module,exports){
+arguments[4][433][0].apply(exports,arguments)
+},{"dup":433,"two-product":453,"two-sum":449}],451:[function(require,module,exports){
+arguments[4][434][0].apply(exports,arguments)
+},{"dup":434}],452:[function(require,module,exports){
+arguments[4][435][0].apply(exports,arguments)
+},{"dup":435}],453:[function(require,module,exports){
+arguments[4][436][0].apply(exports,arguments)
+},{"dup":436}],454:[function(require,module,exports){
+arguments[4][437][0].apply(exports,arguments)
+},{"dup":437,"robust-scale":450,"robust-subtract":451,"robust-sum":452,"two-product":453}],455:[function(require,module,exports){
 //http://en.wikipedia.org/wiki/Haversine_formula
 //http://www.movable-type.co.uk/scripts/latlong.html
 var getCoord = require('turf-invariant').getCoord;
@@ -77857,9 +74707,9 @@ module.exports = function (from, distance, bearing, units) {
     return point([radians2degrees * longitude2, radians2degrees * latitude2]);
 };
 
-},{"turf-helpers":499,"turf-invariant":491}],491:[function(require,module,exports){
-arguments[4][450][0].apply(exports,arguments)
-},{"dup":450}],492:[function(require,module,exports){
+},{"turf-helpers":464,"turf-invariant":456}],456:[function(require,module,exports){
+arguments[4][415][0].apply(exports,arguments)
+},{"dup":415}],457:[function(require,module,exports){
 // depend on jsts for now https://github.com/bjornharrtell/jsts/blob/master/examples/overlay.html
 var jsts = require('jsts');
 
@@ -77955,9 +74805,9 @@ module.exports = function (p1, p2) {
     };
 };
 
-},{"jsts":493}],493:[function(require,module,exports){
-arguments[4][455][0].apply(exports,arguments)
-},{"dup":455}],494:[function(require,module,exports){
+},{"jsts":458}],458:[function(require,module,exports){
+arguments[4][420][0].apply(exports,arguments)
+},{"dup":420}],459:[function(require,module,exports){
 var getCoord = require('turf-invariant').getCoord;
 var radiansToDistance = require('turf-helpers').radiansToDistance;
 //http://en.wikipedia.org/wiki/Haversine_formula
@@ -78019,9 +74869,9 @@ module.exports = function (from, to, units) {
     return radiansToDistance(2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)), units);
 };
 
-},{"turf-helpers":499,"turf-invariant":495}],495:[function(require,module,exports){
-arguments[4][450][0].apply(exports,arguments)
-},{"dup":450}],496:[function(require,module,exports){
+},{"turf-helpers":464,"turf-invariant":460}],460:[function(require,module,exports){
+arguments[4][415][0].apply(exports,arguments)
+},{"dup":415}],461:[function(require,module,exports){
 var bbox = require('turf-bbox');
 var bboxPolygon = require('turf-bbox-polygon');
 
@@ -78081,7 +74931,7 @@ module.exports = function (features) {
     return bboxPolygon(bbox(features));
 };
 
-},{"turf-bbox":448,"turf-bbox-polygon":447}],497:[function(require,module,exports){
+},{"turf-bbox":413,"turf-bbox-polygon":412}],462:[function(require,module,exports){
 var featureCollection = require('turf-helpers').featureCollection;
 var each = require('turf-meta').coordEach;
 var point = require('turf-helpers').point;
@@ -78126,7 +74976,7 @@ module.exports = function (geojson) {
     return featureCollection(points);
 };
 
-},{"turf-helpers":499,"turf-meta":512}],498:[function(require,module,exports){
+},{"turf-helpers":464,"turf-meta":477}],463:[function(require,module,exports){
 var coordEach = require('turf-meta').coordEach;
 
 /**
@@ -78164,7 +75014,7 @@ module.exports = function flip(input) {
     return input;
 };
 
-},{"turf-meta":512}],499:[function(require,module,exports){
+},{"turf-meta":477}],464:[function(require,module,exports){
 /**
  * Wraps a GeoJSON {@link Geometry} in a GeoJSON {@link Feature}.
  *
@@ -78489,7 +75339,7 @@ module.exports.distanceToDegrees = function (distance, units) {
     return (distance / factor) * 57.2958;
 };
 
-},{}],500:[function(require,module,exports){
+},{}],465:[function(require,module,exports){
 var point = require('turf-helpers').point;
 var polygon = require('turf-helpers').polygon;
 var distance = require('turf-distance');
@@ -78621,7 +75471,7 @@ function hexTriangles(center, rx, ry) {
     return triangles;
 }
 
-},{"turf-distance":494,"turf-helpers":499}],501:[function(require,module,exports){
+},{"turf-distance":459,"turf-helpers":464}],466:[function(require,module,exports){
 var invariant = require('turf-invariant');
 
 // http://en.wikipedia.org/wiki/Even%E2%80%93odd_rule
@@ -78722,9 +75572,9 @@ function inRing(pt, ring) {
     return isInside;
 }
 
-},{"turf-invariant":502}],502:[function(require,module,exports){
-arguments[4][450][0].apply(exports,arguments)
-},{"dup":450}],503:[function(require,module,exports){
+},{"turf-invariant":467}],467:[function(require,module,exports){
+arguments[4][415][0].apply(exports,arguments)
+},{"dup":415}],468:[function(require,module,exports){
 // depend on jsts for now https://github.com/bjornharrtell/jsts/blob/master/examples/overlay.html
 var jsts = require('jsts');
 
@@ -78808,9 +75658,9 @@ module.exports = function intersect(poly1, poly2) {
     };
 };
 
-},{"jsts":504}],504:[function(require,module,exports){
-arguments[4][455][0].apply(exports,arguments)
-},{"dup":455}],505:[function(require,module,exports){
+},{"jsts":469}],469:[function(require,module,exports){
+arguments[4][420][0].apply(exports,arguments)
+},{"dup":420}],470:[function(require,module,exports){
 /* eslint-disable */
 
 /*
@@ -79329,7 +76179,7 @@ arguments[4][455][0].apply(exports,arguments)
       }
   };
 
-},{}],506:[function(require,module,exports){
+},{}],471:[function(require,module,exports){
 //https://github.com/jasondavies/conrec.js
 //http://stackoverflow.com/questions/263305/drawing-a-topographical-map
 var tin = require('turf-tin');
@@ -79427,7 +76277,7 @@ module.exports = function (points, z, resolution, breaks) {
     return fc;
 };
 
-},{"./conrec":505,"turf-bbox":448,"turf-grid":507,"turf-helpers":499,"turf-inside":501,"turf-planepoint":515,"turf-square":525,"turf-tin":529}],507:[function(require,module,exports){
+},{"./conrec":470,"turf-bbox":413,"turf-grid":472,"turf-helpers":464,"turf-inside":466,"turf-planepoint":480,"turf-square":490,"turf-tin":494}],472:[function(require,module,exports){
 var point = require('turf-point');
 
 /**
@@ -79466,7 +76316,7 @@ module.exports = function(extents, depth) {
   return fc;
 }
 
-},{"turf-point":508}],508:[function(require,module,exports){
+},{"turf-point":473}],473:[function(require,module,exports){
 /**
  * Takes coordinates and properties (optional) and returns a new {@link Point} feature.
  *
@@ -79498,7 +76348,7 @@ module.exports = function(coordinates, properties) {
   };
 };
 
-},{}],509:[function(require,module,exports){
+},{}],474:[function(require,module,exports){
 /**
  * Takes a {@link Polygon|polygon} and returns {@link Point|points} at all self-intersections.
  *
@@ -79612,7 +76462,7 @@ function lineIntersects(line1StartX, line1StartY, line1EndX, line1EndY, line2Sta
     }
 }
 
-},{"turf-helpers":499}],510:[function(require,module,exports){
+},{"turf-helpers":464}],475:[function(require,module,exports){
 var distance = require('turf-distance');
 var point = require('turf-helpers').point;
 
@@ -79695,7 +76545,7 @@ function length(coords, units) {
     return travelled;
 }
 
-},{"turf-distance":494,"turf-helpers":499}],511:[function(require,module,exports){
+},{"turf-distance":459,"turf-helpers":464}],476:[function(require,module,exports){
 var linestring = require('turf-helpers').lineString;
 var pointOnLine = require('turf-point-on-line');
 
@@ -79777,7 +76627,7 @@ module.exports = function lineSlice(startPt, stopPt, line) {
     return clipLine;
 };
 
-},{"turf-helpers":499,"turf-point-on-line":517}],512:[function(require,module,exports){
+},{"turf-helpers":464,"turf-point-on-line":482}],477:[function(require,module,exports){
 /**
  * Iterate over coordinates in any GeoJSON object, similar to
  * Array.forEach.
@@ -79955,7 +76805,7 @@ function coordAll(layer) {
 }
 module.exports.coordAll = coordAll;
 
-},{}],513:[function(require,module,exports){
+},{}],478:[function(require,module,exports){
 var bearing = require('turf-bearing');
 var destination = require('turf-destination');
 var distance = require('turf-distance');
@@ -80005,7 +76855,7 @@ module.exports = function (from, to) {
     return midpoint;
 };
 
-},{"turf-bearing":449,"turf-destination":490,"turf-distance":494}],514:[function(require,module,exports){
+},{"turf-bearing":414,"turf-destination":455,"turf-distance":459}],479:[function(require,module,exports){
 var distance = require('turf-distance');
 
 /**
@@ -80080,7 +76930,7 @@ module.exports = function (targetPoint, points) {
     return nearestPoint;
 };
 
-},{"turf-distance":494}],515:[function(require,module,exports){
+},{"turf-distance":459}],480:[function(require,module,exports){
 /**
  * Takes a triangular plane as a {@link Polygon}
  * and a {@link Point} within that triangle and returns the z-value
@@ -80154,7 +77004,7 @@ module.exports = function (point, triangle) {
     return z;
 };
 
-},{}],516:[function(require,module,exports){
+},{}],481:[function(require,module,exports){
 var point = require('turf-helpers').point;
 var featurecollection = require('turf-helpers').featureCollection;
 var distance = require('turf-distance');
@@ -80196,7 +77046,7 @@ module.exports = function pointGrid(bbox, cellSize, units) {
     return fc;
 };
 
-},{"turf-distance":494,"turf-helpers":499}],517:[function(require,module,exports){
+},{"turf-distance":459,"turf-helpers":464}],482:[function(require,module,exports){
 var distance = require('turf-distance');
 var point = require('turf-helpers').point;
 var bearing = require('turf-bearing');
@@ -80353,7 +77203,7 @@ function lineIntersects(line1StartX, line1StartY, line1EndX, line1EndY, line2Sta
     }
 }
 
-},{"turf-bearing":449,"turf-destination":490,"turf-distance":494,"turf-helpers":499}],518:[function(require,module,exports){
+},{"turf-bearing":414,"turf-destination":455,"turf-distance":459,"turf-helpers":464}],483:[function(require,module,exports){
 var featureCollection = require('turf-helpers').featureCollection;
 var centroid = require('turf-center');
 var distance = require('turf-distance');
@@ -80503,7 +77353,7 @@ function pointOnSegment(x, y, x1, y1, x2, y2) {
 
 module.exports = pointOnSurface;
 
-},{"turf-center":456,"turf-distance":494,"turf-explode":497,"turf-helpers":499,"turf-inside":501}],519:[function(require,module,exports){
+},{"turf-center":421,"turf-distance":459,"turf-explode":462,"turf-helpers":464,"turf-inside":466}],484:[function(require,module,exports){
 var random = require('geojson-random');
 
 /**
@@ -80556,7 +77406,7 @@ module.exports = function (type, count, options) {
     }
 };
 
-},{"geojson-random":520}],520:[function(require,module,exports){
+},{"geojson-random":485}],485:[function(require,module,exports){
 module.exports = function() {
     throw new Error('call .point() or .polygon() instead');
 };
@@ -80661,7 +77511,7 @@ function collection(f) {
     };
 }
 
-},{}],521:[function(require,module,exports){
+},{}],486:[function(require,module,exports){
 // http://stackoverflow.com/questions/11935175/sampling-a-random-subset-from-an-array
 var featureCollection = require('turf-helpers').featureCollection;
 
@@ -80697,7 +77547,7 @@ function getRandomSubarray(arr, size) {
     return shuffled.slice(min);
 }
 
-},{"turf-helpers":499}],522:[function(require,module,exports){
+},{"turf-helpers":464}],487:[function(require,module,exports){
 var simplify = require('simplify-js');
 
 // supported GeoJSON geometries, used to check whether to wrap in simpleFeature()
@@ -80880,7 +77730,7 @@ function simplifyPolygon(coordinates, tolerance, highQuality) {
     });
 }
 
-},{"simplify-js":523}],523:[function(require,module,exports){
+},{"simplify-js":488}],488:[function(require,module,exports){
 /*
  (c) 2013, Vladimir Agafonkin
  Simplify.js, a high-performance JS polyline simplification library
@@ -81013,7 +77863,7 @@ else window.simplify = simplify;
 
 })();
 
-},{}],524:[function(require,module,exports){
+},{}],489:[function(require,module,exports){
 var featurecollection = require('turf-helpers').featureCollection;
 var point = require('turf-helpers').point;
 var polygon = require('turf-helpers').polygon;
@@ -81064,7 +77914,7 @@ module.exports = function squareGrid(bbox, cellSize, units) {
     return fc;
 };
 
-},{"turf-distance":494,"turf-helpers":499}],525:[function(require,module,exports){
+},{"turf-distance":459,"turf-helpers":464}],490:[function(require,module,exports){
 var distance = require('turf-distance');
 
 /**
@@ -81111,7 +77961,7 @@ module.exports = function (bbox) {
     }
 };
 
-},{"turf-distance":494}],526:[function(require,module,exports){
+},{"turf-distance":459}],491:[function(require,module,exports){
 var inside = require('turf-inside');
 
 /**
@@ -81168,7 +78018,7 @@ module.exports = function (points, polygons, field, outField) {
     return points;
 };
 
-},{"turf-inside":501}],527:[function(require,module,exports){
+},{"turf-inside":466}],492:[function(require,module,exports){
 var polygon = require('turf-helpers').polygon;
 var earcut = require('earcut');
 
@@ -81245,7 +78095,7 @@ function flattenCoords(data) {
     return result;
 }
 
-},{"earcut":528,"turf-helpers":499}],528:[function(require,module,exports){
+},{"earcut":493,"turf-helpers":464}],493:[function(require,module,exports){
 'use strict';
 
 module.exports = earcut;
@@ -81891,7 +78741,7 @@ earcut.flatten = function (data) {
     return result;
 };
 
-},{}],529:[function(require,module,exports){
+},{}],494:[function(require,module,exports){
 //http://en.wikipedia.org/wiki/Delaunay_triangulation
 //https://github.com/ironwallaby/delaunay
 var polygon = require('turf-helpers').polygon;
@@ -82130,7 +78980,7 @@ function triangulate(vertices) {
     return closed;
 }
 
-},{"turf-helpers":499}],530:[function(require,module,exports){
+},{"turf-helpers":464}],495:[function(require,module,exports){
 var featurecollection = require('turf-helpers').featureCollection;
 var polygon = require('turf-helpers').polygon;
 var distance = require('turf-distance');
@@ -82224,7 +79074,7 @@ module.exports = function (bbox, cellSize, units) {
 };
 
 
-},{"turf-distance":494,"turf-helpers":499}],531:[function(require,module,exports){
+},{"turf-distance":459,"turf-helpers":464}],496:[function(require,module,exports){
 // look here for help http://svn.osgeo.org/grass/grass/branches/releasebranch_6_4/vector/v.overlay/main.c
 //must be array of polygons
 
@@ -82298,9 +79148,9 @@ module.exports = function (poly1, poly2) {
     };
 };
 
-},{"jsts":532}],532:[function(require,module,exports){
-arguments[4][455][0].apply(exports,arguments)
-},{"dup":455}],533:[function(require,module,exports){
+},{"jsts":497}],497:[function(require,module,exports){
+arguments[4][420][0].apply(exports,arguments)
+},{"dup":420}],498:[function(require,module,exports){
 var inside = require('turf-inside');
 var featureCollection = require('turf-helpers').featureCollection;
 
@@ -82396,4 +79246,4 @@ module.exports = function (points, polygons) {
     return pointsWithin;
 };
 
-},{"turf-helpers":499,"turf-inside":501}]},{},[2]);
+},{"turf-helpers":464,"turf-inside":466}]},{},[2]);
