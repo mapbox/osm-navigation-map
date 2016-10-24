@@ -1320,8 +1320,8 @@ function showTileBoundary() {
     var bbox = [map.getBounds()["_sw"]["lng"], map.getBounds()["_sw"]["lat"], map.getBounds()["_ne"]["lng"], map.getBounds()["_ne"]["lat"]];
     var poly = turf.bboxPolygon(bbox);
     var limits = {
-        min_zoom: 12,
-        max_zoom: 12
+        min_zoom: 14,
+        max_zoom: 14
     };
 
     var geojson = cover.geojson(poly.geometry, limits);
