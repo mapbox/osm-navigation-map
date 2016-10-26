@@ -215,7 +215,24 @@ function init() {
     // Fetch data every 10 minutes
     refreshData(10);
 
-    var mapillaryRestrictionsFilter = ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de", "mandatory--proceed-straight-or-turn-left--de", "mandatory--turn-right--de", "mandatory--proceed-straight-or-turn-right--de", "mandatory--proceed-straight--de", "mandatory--turn-left-ahead--de", "mandatory--turn-right-ahead--de", "prohibitory--no-u-turn--de", "prohibitory--no-left-turn--de", "prohibitory--no-right-turn--de"]
+    var mapillaryRestrictionsFilter = [
+      "all",
+      ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de", "mandatory--proceed-straight-or-turn-left--de", "mandatory--turn-right--de", "mandatory--proceed-straight-or-turn-right--de", "mandatory--proceed-straight--de", "mandatory--turn-left-ahead--de", "mandatory--turn-right-ahead--de", "prohibitory--no-u-turn--de", "prohibitory--no-left-turn--de", "prohibitory--no-right-turn--de"],
+      [">=", "updated_at", Date.now() - 86400000 * 90],
+    ];
+
+    var days = location.hash.split('/')[3];
+
+    if (days) {
+        days.replace('#', '');
+        mapillaryRestrictionsFilter[2] = [">=", "updated_at", Date.now() - 86400000 * parseInt(days, 10)];
+    } else {
+        updateHash('90');
+    }
+
+    function updateHash(days) {
+        location.hash += '/' + days;
+    }
 
     var mapillaryTraffic = {
         "id": "mapillaryTraffic",
