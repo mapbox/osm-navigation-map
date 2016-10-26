@@ -221,17 +221,17 @@ function init() {
       [">=", "updated_at", Date.now() - 86400000 * 90],
     ];
 
-    var days = location.hash.split('/')[3];
+    var days = location.search;
 
     if (days) {
-        days.replace('#', '');
+        days = days.split('=')[1];
         mapillaryRestrictionsFilter[2] = [">=", "updated_at", Date.now() - 86400000 * parseInt(days, 10)];
     } else {
-        updateHash('90');
+        updateUrl('90');
     }
 
-    function updateHash(days) {
-        location.hash += '/' + days;
+    function updateUrl(days) {
+        location.search = '?days=' + days;
     }
 
     var mapillaryTraffic = {
