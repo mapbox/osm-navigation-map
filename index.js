@@ -221,6 +221,19 @@ function init() {
       [">=", "updated_at", Date.now() - 86400000 * 90],
     ];
 
+    var days = location.hash.split('/')[3];
+
+    if (days) {
+        days.replace('#', '');
+        mapillaryRestrictionsFilter[2] = [">=", "updated_at", Date.now() - 86400000 * parseInt(days, 10)];
+    } else {
+        updateHash('90');
+    }
+
+    function updateHash(days) {
+        location.hash += '/' + days;
+    }
+
     var mapillaryTraffic = {
         "id": "mapillaryTraffic",
         "type": "circle",
