@@ -221,11 +221,16 @@ function init() {
       [">=", "updated_at", Date.now() - 86400000 * 90],
     ];
 
+    var mapillaryCoverageFilter = [
+      ">=", "captured_at", Date.now() - 86400000 * 90
+    ];
+
     var days = location.search;
 
     if (days) {
         days = days.split('=')[1];
         mapillaryRestrictionsFilter[2] = [">=", "updated_at", Date.now() - 86400000 * parseInt(days, 10)];
+        mapillaryCoverageFilter = [">=", "captured_at", Date.now() - 86400000 * parseInt(days, 10)];
     } else {
         updateUrl('90');
     }
@@ -293,7 +298,8 @@ function init() {
                     [16, 0.4]
                 ]
             }
-        }
+        },
+        "filter": mapillaryCoverageFilter
     };
 
     var mapillaryCoverageLineDirection = {
@@ -327,7 +333,8 @@ function init() {
         },
         "paint": {
             "icon-opacity": 1
-        }
+        },
+        "filter": mapillaryCoverageFilter
     };
 
     var mapillaryTrafficHighlight = {
