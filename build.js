@@ -1341,23 +1341,25 @@ function init() {
         mapillaryImageKey = node.key;
     });
 
-    map.on('dragend', function(event) {
-      if (map.getZoom() > 14) {
-        getTurnRestrictions(function(error, data) {
-          if (error) return console.error(error);
-          map.getSource('osmTurnRestrictions').setData(data);
-        });
-      }
-    });
-
-    map.on('zoomend', function(event) {
-      if (map.getZoom() > 14) {
-        getTurnRestrictions(function(error, data) {
-          if (error) return console.error(error);
-          map.getSource('osmTurnRestrictions').setData(data);
-        })
-      }
-    });
+    // Temporary: Turn off overpass queries
+    //
+    // map.on('dragend', function(event) {
+    //   if (map.getZoom() > 14) {
+    //     getTurnRestrictions(function(error, data) {
+    //       if (error) return console.error(error);
+    //       map.getSource('osmTurnRestrictions').setData(data);
+    //     });
+    //   }
+    // });
+    //
+    // map.on('zoomend', function(event) {
+    //   if (map.getZoom() > 14) {
+    //     getTurnRestrictions(function(error, data) {
+    //       if (error) return console.error(error);
+    //       map.getSource('osmTurnRestrictions').setData(data);
+    //     })
+    //   }
+    // });
 }
 
 
