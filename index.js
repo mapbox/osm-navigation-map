@@ -217,7 +217,7 @@ function init() {
 
     var mapillaryRestrictionsFilter = [
       "all",
-      ["in", "value", "regulatory--no-left-turn--g1", "regulatory--no-right-turn--g1", "regulatory--no-straight-through--g1", "regulatory--no-u-turn--g1", "regulatory--no-left-or-u-turn--g1"],
+      ["in", "value", "regulatory--no-left-turn--g1", "regulatory--no-left-turn--g2", "regulatory--no-right-turn--g1", "regulatory--no-right-turn--g2", "regulatory--no-straight-through--g1", "regulatory--no-u-turn--g1", "regulatory--no-left-or-u-turn--g1", "regulatory--turn-left--g1", "regulatory--turn-right--g1", "regulatory--go-straight--g1", "regulatory--go-straight-or-turn-left--g1", "regulatory--go-straight-or-turn-right--g1", "regulatory--turn-left-ahead--g1", "regulatory--turn-right-ahead--g1"],
       [">=", "updated_at", Date.now() - 86400000 * 90],
     ];
 
