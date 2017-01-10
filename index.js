@@ -178,7 +178,7 @@ function init() {
     var mapillaryTrafficSigns = {
         "type": "vector",
         "tiles": [
-            "https://a.mapillary.com/v3/tiles/{z}/{x}/{y}.mapbox?objects=accuracy,alt,first_seen_at,last_seen_at,rect_count,rects,updated_at,value,user_keys&client_id=" + MAPILLARY_CLIENT_ID,
+            "https://a.mapillary.com/v3/tiles/objects/{z}/{x}/{y}.mvt?layers=mapillary-objects-trafficsigns&client_id=" + MAPILLARY_CLIENT_ID,
         ],
         "minzoom": 14,
         "maxzoom": 14
@@ -217,7 +217,7 @@ function init() {
 
     var mapillaryRestrictionsFilter = [
       "all",
-      ["in", "value", "regulatory--no-left-turn--us", "regulatory--no-right-turn--us", "regulatory--no-straight-through--us", "regulatory--no-u-turn--us", "regulatory--no-left-or-u-turn--us", "regulatory--no-left-turn--ca", "regulatory--no-right-turn--ca", "regulatory--no-straight-through--ca", "regulatory--no-u-turn--ca", "regulatory--no-left-or-u-turn--ca", "regulatory--no-left-turn", "regulatory--no-right-turn", "regulatory--no-straight-through", "regulatory--no-u-turn", "regulatory--no-left-or-u-turn", "mandatory--turn-left--de", "mandatory--proceed-straight-or-turn-left--de", "mandatory--turn-right--de", "mandatory--proceed-straight-or-turn-right--de", "mandatory--proceed-straight--de", "mandatory--turn-left-ahead--de", "mandatory--turn-right-ahead--de", "prohibitory--no-u-turn--de", "prohibitory--no-left-turn--de", "prohibitory--no-right-turn--de"],
+      ["in", "value", "regulatory--no-left-turn--g1", "regulatory--no-right-turn--g1", "regulatory--no-straight-through--g1", "regulatory--no-u-turn--g1", "regulatory--no-left-or-u-turn--g1"],
       [">=", "updated_at", Date.now() - 86400000 * 90],
     ];
 
@@ -243,7 +243,7 @@ function init() {
         "id": "mapillaryTraffic",
         "type": "circle",
         "source": "mapillary",
-        'source-layer': 'objects',
+        'source-layer': 'mapillary-objects-trafficsigns',
         'layout': {
             'visibility': 'none'
         },
@@ -263,13 +263,13 @@ function init() {
         "id": "mapillaryTrafficRestrictions",
         "type": "circle",
         "source": "mapillary",
-        'source-layer': 'objects',
+        'source-layer': 'mapillary-objects-trafficsigns',
         'layout': {
             'visibility': 'none'
         },
         "paint": {
-            "circle-radius": 5,
-            "circle-color": "hsl(112, 100%, 50%)"
+            "circle-radius": 9,
+            "circle-color": "hsl(112, 0%, 100%)"
         },
         "filter": mapillaryRestrictionsFilter
     };
@@ -341,7 +341,7 @@ function init() {
         "id": "mapillaryTrafficHighlight",
         "type": "circle",
         "source": "mapillary",
-        'source-layer': 'objects',
+        'source-layer': 'mapillary-objects-trafficsigns',
         "layout": {
             "visibility": "none"
         },
@@ -357,7 +357,7 @@ function init() {
         "id": "mapillaryTrafficLabel",
         "type": "symbol",
         "source": "mapillary",
-        "source-layer": "objects",
+        "source-layer": "mapillary-objects-trafficsigns",
         "layout": {
             "text-field": "{value}",
             "text-size": 8,
@@ -381,7 +381,7 @@ function init() {
         "id": "mapillaryTrafficRestrictionsIcon",
         "type": "symbol",
         "source": "mapillary",
-        "source-layer": "objects",
+        "source-layer": "mapillary-objects-trafficsigns",
         "layout": {
             "icon-image": "{value}",
             'icon-image': '{value}',
@@ -396,7 +396,7 @@ function init() {
         "id": "mapillaryTrafficRestrictionsLabel",
         "type": "symbol",
         "source": "mapillary",
-        "source-layer": "objects",
+        "source-layer": "mapillary-objects-trafficsigns",
         "layout": {
             "text-field": "{value}",
             "text-size": 14,
@@ -1065,12 +1065,15 @@ function init() {
 
         if (mapillaryRestrictions.length) {
             var restriction = mapillaryRestrictions[0];
-            var rects = restriction.properties.rects;
-            var imageKeys = JSON.parse(rects).map(function(rect) {
-                return rect.image_key;
+
+            var detections = restriction.properties.detections;
+            var imageKeys = JSON.parse(detections).map(function(detections) {
+                return detections.image_key;
             });
 
-            map.setFilter('mapillaryTrafficHighlight', ['==', 'rects', rects]);
+            var restrictionKey = restriction.properties.key;
+
+            map.setFilter('mapillaryTrafficHighlight', ['==', 'key', restrictionKey]);
             map.setFilter('mapillaryImages', ['in', 'key'].concat(imageKeys));
             map.setFilter('mapillaryImagesHighlight', ['==', 'key', '']);
             map.setFilter('mapillarySequence', ['==', 'skey', '']);
