@@ -35,11 +35,7 @@ map.addControl(new mapboxgl.Geocoder({
     container: 'geocoder-container'
 }));
 
-var mly = new Mapillary.Viewer('mly', MAPILLARY_CLIENT_ID, null, {
-    attribution: false,
-    direction: false,
-    mouse: false
-});
+var mly = new Mapillary.Viewer('mly', MAPILLARY_CLIENT_ID);
 $('#mly').hide();
 
 // Layer for review markers
@@ -1292,8 +1288,8 @@ function init() {
     });
 
 
-    mly.on('nodechanged', function(node) {
-        map.setFilter('mapillarySequence', ['==', 'skey', node.sequence.key]);
+    mly.on(Mapillary.Viewer.nodechanged, function(node) {
+        map.setFilter('mapillarySequence', ['==', 'skey', node.sequenceKey]);
         map.setFilter('mapillarySequenceHighlight', ['==', 'key', node.key]);
 
         mapillaryImageKey = node.key;
@@ -1487,14 +1483,6 @@ function openInJOSM() {
     var josmUrl = 'http://127.0.0.1:8111/load_and_zoom?left=' + left + '&right=' + right + '&top=' + top + '&bottom=' + bottom;
     $.ajax(josmUrl, function() {});
 }
-
-// Open fullsize Mapillary image in new tab onclicking thumbnail
-$('#mly').click(function(e) {
-    if (e.target.className == 'domRenderer') {
-        var url = 'https://d1cuyjsrcm0gby.cloudfront.net/' + mapillaryImageKey + '/thumb-2048.jpg'
-        window.open(url, '_blank')
-    }
-});
 
 function countProperty(geojson, property) {
     var stats = {};
