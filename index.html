@@ -18,8 +18,8 @@
   <link href='https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-geocoder/v1.3.0/mapbox-gl-geocoder.css' rel='stylesheet'>
 
   <!-- mapillary js -->
-  <script src='https://npmcdn.com/mapillary-js@1.6.0/dist/mapillary-js.min.js'></script>
-  <link rel='stylesheet' href='https://npmcdn.com/mapillary-js@1.6.0/dist/mapillary-js.min.css'>
+  <script src='https://unpkg.com/mapillary-js@2.5.2/dist/mapillary.min.js'></script>
+  <link rel='stylesheet' href='https://unpkg.com/mapillary-js@2.5.2/dist/mapillary.min.css'>
 
   <!-- styles -->
   <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet'>
@@ -63,7 +63,7 @@
     <div id='restrictionValidator' class='short button'>Restriction Validator</div>
     <div id='feature-stats' class='dark'>
       <ul>
-        <li>Total Mapillary restrictions reviewed <span data-count-feature='total' class='short button'>0</span></li>
+        <li>Reviewed <span data-count-feature='total'></span></li>
         <li>Valid <span data-count-feature='valid'></span></li>
         <li>Redundant <span data-count-feature='redundant'></span></li>
         <li>Invalid <span data-count-feature='invalid'></span></li>
