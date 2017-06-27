@@ -187,7 +187,7 @@ function init() {
     var mapillaryCoverage = {
         "type": "vector",
         "tiles": [
-            "http://d25uarhxywzl1j.cloudfront.net/v0.1/{z}/{x}/{y}.mvt"
+            "https://d25uarhxywzl1j.cloudfront.net/v0.1/{z}/{x}/{y}.mvt"
         ],
         "maxzoom": 14
     };
