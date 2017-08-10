@@ -177,7 +177,7 @@ function init() {
             "https://a.mapillary.com/v3/tiles/objects/{z}/{x}/{y}.mvt?layers=mapillary-objects-trafficsigns&client_id=" + MAPILLARY_CLIENT_ID,
         ],
         "minzoom": 14,
-        "maxzoom": 19
+        "maxzoom": 17
     };
 
     var mapillaryCoverage = {
