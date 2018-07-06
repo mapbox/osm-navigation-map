@@ -2,7 +2,7 @@ var DATASETS_PROXY_URL = '***REMOVED***';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
-var MAPILLARY_CLIENT_ID = "***REMOVED***3";
+var MAPILLARY_CLIENT_ID = "***REMOVED***";
 
 var cover = require('tile-cover');
 var turf = require('turf');

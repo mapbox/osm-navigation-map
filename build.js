@@ -3,8 +3,8 @@
 var osmAuth = require('osm-auth');
 
 var auth = osmAuth({
-    oauth_secret: 'DPjp9YIqhqrCLBRZ8bhwPZV2pNhlNSVsMiyLUskC',
-    oauth_consumer_key: 'ffGkvyNI6Tcko35eNo8FmFp1VYaTL6rYsa9wTPi8'
+    oauth_secret: '***REMOVED***',
+    oauth_consumer_key: '***REMOVED***'
 });
 
 function done(err, res) {
@@ -43,11 +43,11 @@ auth.update = function () {
 module.exports = auth;
 
 },{"osm-auth":36}],2:[function(require,module,exports){
-var DATASETS_PROXY_URL = 'https://57cj94alhd.execute-api.us-east-1.amazonaws.com/testing/features';
+var DATASETS_PROXY_URL = '***REMOVED***';
 
 var MAPBOX_DATA_TEAM = require('mapbox-data-team').getUsernames();
 
-var MAPILLARY_CLIENT_ID = "MFo5YmpwMmxHMmxJaUt3VW14c0ZCZzphZDU5ZDBjNTMzN2Y3YTE3";
+var MAPILLARY_CLIENT_ID = "***REMOVED***";
 
 var cover = require('tile-cover');
 var turf = require('turf');
@@ -1823,13 +1823,13 @@ exports.interleave3 = function(x, y, z) {
   y  = (y | (y<<4))  & 3272356035;
   y  = (y | (y<<2))  & 1227133513;
   x |= (y << 1);
-  
+
   z &= 0x3FF;
   z  = (z | (z<<16)) & 4278190335;
   z  = (z | (z<<8))  & 251719695;
   z  = (z | (z<<4))  & 3272356035;
   z  = (z | (z<<2))  & 1227133513;
-  
+
   return x | (z << 2);
 }
 
@@ -5305,7 +5305,7 @@ function forEach(list, iterator, context) {
     if (arguments.length < 3) {
         context = this
     }
-    
+
     if (toString.call(list) === '[object Array]')
         forEachArray(list, iterator, context)
     else if (typeof list === 'string')
@@ -5626,27 +5626,27 @@ var hat = module.exports = function (bits, base) {
     if (!base) base = 16;
     if (bits === undefined) bits = 128;
     if (bits <= 0) return '0';
-    
+
     var digits = Math.log(Math.pow(2, bits)) / Math.log(base);
     for (var i = 2; digits === Infinity; i *= 2) {
         digits = Math.log(Math.pow(2, bits / i)) / Math.log(base) * i;
     }
-    
+
     var rem = digits - Math.floor(digits);
-    
+
     var res = '';
-    
+
     for (var i = 0; i < Math.floor(digits); i++) {
         var x = Math.floor(Math.random() * base).toString(base);
         res = x + res;
     }
-    
+
     if (rem) {
         var b = Math.pow(base, rem);
         var x = Math.floor(Math.random() * b).toString(base);
         res = x + res;
     }
-    
+
     var parsed = parseInt(res, base);
     if (parsed !== Infinity && parsed >= Math.pow(2, bits)) {
         return hat(bits, base)
@@ -5662,24 +5662,24 @@ hat.rack = function (bits, base, expandBy) {
                 if (expandBy) bits += expandBy;
                 else throw new Error('too many ID collisions, use more bits')
             }
-            
+
             var id = hat(bits, base);
         } while (Object.hasOwnProperty.call(hats, id));
-        
+
         hats[id] = data;
         return id;
     };
     var hats = fn.hats = {};
-    
+
     fn.get = function (id) {
         return fn.hats[id];
     };
-    
+
     fn.set = function (id, value) {
         fn.hats[id] = value;
         return fn;
     };
-    
+
     fn.bits = bits || 128;
     fn.base = base || 16;
     return fn;
@@ -5989,7 +5989,7 @@ proto.addPeaks = function(point, cell) {
       var nv = neighbor.vertices
 
       //Test if neighbor is a peak
-      if(neighbor.lastVisited !== -n) {      
+      if(neighbor.lastVisited !== -n) {
         //Compute orientation of p relative to each boundary peak
         var indexOfNeg1 = 0
         for(var j=0; j<=d; ++j) {
@@ -6214,7 +6214,7 @@ function incrementalConvexHull(points, randomSearch) {
   for(var i=d+1; i<n; ++i) {
     triangles.insert(points[i], useRandom)
   }
-  
+
   //Extract boundary cells
   return triangles.boundary()
 }
@@ -8708,8 +8708,8 @@ function monotoneConvexHull2D(points) {
     //Insert into lower list
     var m = lower.length
     while(m > 1 && orient(
-        points[lower[m-2]], 
-        points[lower[m-1]], 
+        points[lower[m-2]],
+        points[lower[m-1]],
         p) <= 0) {
       m -= 1
       lower.pop()
@@ -8719,8 +8719,8 @@ function monotoneConvexHull2D(points) {
     //Insert into upper list
     m = upper.length
     while(m > 1 && orient(
-        points[upper[m-2]], 
-        points[upper[m-1]], 
+        points[upper[m-2]],
+        points[upper[m-1]],
         p) >= 0) {
       m -= 1
       upper.pop()
@@ -12205,7 +12205,7 @@ module.exports = function(query, cb, options) {
                 }
             })
     } else {
-        r = request.post(options.overpassUrl || 'http://overpass-api.de/api/interpreter', reqOptions, 
+        r = request.post(options.overpassUrl || 'http://overpass-api.de/api/interpreter', reqOptions,
             function (error, response, body) {
                 if (!error && response.statusCode === 200) {
                     toGeoJSON(JSON.parse(body));
@@ -14778,7 +14778,7 @@ var orientation4Exact = orientation(4)
 var CACHED = [
   function orientation0() { return 0 },
   function orientation1() { return 0 },
-  function orientation2(a, b) { 
+  function orientation2(a, b) {
     return b[0] - a[0]
   },
   function orientation3(a, b, c) {
@@ -14823,7 +14823,7 @@ var CACHED = [
     var adxcdy = adx * cdy
     var adxbdy = adx * bdy
     var bdxady = bdx * ady
-    var det = adz * (bdxcdy - cdxbdy) 
+    var det = adz * (bdxcdy - cdxbdy)
             + bdz * (cdxady - adxcdy)
             + cdz * (adxbdy - bdxady)
     var permanent = (Math.abs(bdxcdy) + Math.abs(cdxbdy)) * Math.abs(adz)
@@ -15055,7 +15055,7 @@ function robustSubtract(e, f) {
     y = b - bv
     if(y) {
       g[count++] = y
-    } 
+    }
     _x = q1 + x
     _bv = _x - q1
     _av = _x - _bv
@@ -15075,7 +15075,7 @@ function robustSubtract(e, f) {
     g[count++] = q1
   }
   if(!count) {
-    g[count++] = 0.0  
+    g[count++] = 0.0
   }
   g.length = count
   return g
@@ -15212,7 +15212,7 @@ function linearExpansionSum(e, f) {
     y = b - bv
     if(y) {
       g[count++] = y
-    } 
+    }
     _x = q1 + x
     _bv = _x - q1
     _av = _x - _bv
@@ -15232,7 +15232,7 @@ function linearExpansionSum(e, f) {
     g[count++] = q1
   }
   if(!count) {
-    g[count++] = 0.0  
+    g[count++] = 0.0
   }
   g.length = count
   return g
@@ -15375,9 +15375,9 @@ function compareCells(a, b) {
         return d
       }
       return min(l0+a[2], l1) - min(m0+b[2], m1)
-    
+
     //TODO: Maybe optimize n=4 as well?
-    
+
     default:
       var as = a.slice(0)
       as.sort()
@@ -16321,7 +16321,7 @@ module.exports = {
 var storeAPI = {
 	version: '2.0.12',
 	enabled: false,
-	
+
 	// get returns the value of the given key. If that value
 	// is undefined, it returns optionalDefaultValue instead.
 	get: function(key, optionalDefaultValue) {
@@ -16372,11 +16372,11 @@ var storeAPI = {
 	createStore: function() {
 		return createStore.apply(this, arguments)
 	},
-	
+
 	addPlugin: function(plugin) {
 		this._addPlugin(plugin)
 	},
-	
+
 	namespace: function(namespace) {
 		return createStore(this.storage, this.plugins, namespace)
 	}
@@ -16406,7 +16406,7 @@ function createStore(storages, plugins, namespace) {
 	if (!legalNamespaces.test(namespace)) {
 		throw new Error('store.js namespaces can only have alphanumerics + underscores and dashes')
 	}
-	
+
 	var _privateStoreProps = {
 		_namespacePrefix: namespacePrefix,
 		_namespaceRegexp: namespaceRegexp,
@@ -16464,7 +16464,7 @@ function createStore(storages, plugins, namespace) {
 
 			return (val !== undefined ? val : defaultVal)
 		},
-		
+
 		_addStorage: function(storage) {
 			if (this.enabled) { return }
 			if (this._testStorage(storage)) {
@@ -16513,10 +16513,10 @@ function createStore(storages, plugins, namespace) {
 				self._assignPluginFnProp(pluginFnProp, propName)
 			})
 		},
-		
+
 		// Put deprecated properties in the private API, so as to not expose it to accidential
 		// discovery through inspection of the store object.
-		
+
 		// Deprecated: addStorage
 		addStorage: function(storage) {
 			_warn('store.addStorage(storage) is deprecated. Use createStore([storages])')
@@ -16530,7 +16530,7 @@ function createStore(storages, plugins, namespace) {
 	store.raw = {}
 	each(store, function(prop, propName) {
 		if (isFunction(prop)) {
-			store.raw[propName] = bind(store, prop)			
+			store.raw[propName] = bind(store, prop)
 		}
 	})
 	each(storages, function(storage) {
@@ -16573,7 +16573,7 @@ function make_assign() {
 				each(Object(arguments[i]), function(val, key) {
 					obj[key] = val
 				})
-			}			
+			}
 			return obj
 		}
 	}
@@ -23491,7 +23491,7 @@ module.exports = UnionFind;
 function UnionFind(count) {
   this.roots = new Array(count);
   this.ranks = new Array(count);
-  
+
   for(var i=0; i<count; ++i) {
     this.roots[i] = i;
     this.ranks[i] = 0;
