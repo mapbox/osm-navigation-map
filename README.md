@@ -1,6 +1,6 @@
 ## OpenStreetMap Navigation Map
 
-The [OpenStreetMap Navigation map](http://mapbox.github.io/osm-navigation-map/) is a web application which uses [Mapillary vector layer](http://blog.mapillary.com/update/2015/05/27/vectortiles.html) to highlight the traffic signages detected in Mapillary images. The application is helpful to add/verify/modify turn-restrictions on OpenStreetMap.
+The OpenStreetMap Navigation map is a web application which uses [Mapillary vector layer](http://blog.mapillary.com/update/2015/05/27/vectortiles.html) to highlight the traffic signages detected in Mapillary images. The application is helpful to add/verify/modify turn-restrictions on OpenStreetMap.
 
 ![image](https://cloud.githubusercontent.com/assets/3423533/18305622/07e3b772-7506-11e6-9367-e1fed45eb10a.png)
 
